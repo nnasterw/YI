@@ -16,13 +16,24 @@ calendarSelect.addEventListener("change", () => {
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
+  const yearVal = (document.getElementById("year") as HTMLInputElement).value;
+  const monthVal = (document.getElementById("month") as HTMLInputElement).value;
+  const dayVal = (document.getElementById("day") as HTMLInputElement).value;
+  const hourVal = (document.getElementById("hour") as HTMLInputElement).value;
+
+  if (!yearVal || !monthVal || !dayVal || !hourVal) {
+    reportDiv.innerHTML = `<div class="error">请填写完整的出生年、月、日、时</div>`;
+    outputSection.style.display = "block";
+    return;
+  }
+
   const input: BaziInput = {
     calendarType: calendarSelect.value as "solar" | "lunar",
-    year: Number((document.getElementById("year") as HTMLInputElement).value),
-    month: Number((document.getElementById("month") as HTMLInputElement).value),
-    day: Number((document.getElementById("day") as HTMLInputElement).value),
-    hour: Number((document.getElementById("hour") as HTMLInputElement).value),
-    minute: Number((document.getElementById("minute") as HTMLInputElement).value),
+    year: Number(yearVal),
+    month: Number(monthVal),
+    day: Number(dayVal),
+    hour: Number(hourVal),
+    minute: Number((document.getElementById("minute") as HTMLInputElement).value || "0"),
     gender: (document.getElementById("gender") as HTMLSelectElement).value as "male" | "female",
     sect: Number((document.getElementById("sect") as HTMLSelectElement).value) as 1 | 2,
     isLeapMonth: (document.getElementById("leap-month") as HTMLInputElement).checked

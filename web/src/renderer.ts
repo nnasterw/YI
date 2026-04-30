@@ -388,62 +388,237 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
   const dm = profile.chart.dayMaster;
   const dayBranch = profile.chart.pillars[2].branch.value;
   const diShi = profile.chart.pillars[2].diShi;
+  const dist = profile.tenGodDistribution;
 
-  const dayMasterDescriptions: Record<string, string> = {
-    "甲": "甲木为阳木，象征参天大树。性格正直、有主见、有担当，但也固执、不易变通。",
-    "乙": "乙木为阴木，象征花草藤蔓。柔韧灵活、善于适应环境，但决断力稍弱。",
-    "丙": "丙火为阳火，象征太阳。热情开朗、慷慨大方、有感染力，但容易急躁。",
-    "丁": "丁火为阴火，象征灯烛星光。细腻敏锐、专注力强、有洞察力，但容易多虑。",
-    "戊": "戊土为阳土，象征高山大地。厚重稳定、包容力强、值得信赖，但也固执不变通。",
-    "己": "己土为阴土，象征田园沃土。温和务实、善于养育、有耐心，但容易优柔寡断。",
-    "庚": "庚金为阳金，象征刀剑钢铁。果断锐利、执行力强、重义气，但容易刚愎自用。",
-    "辛": "辛金为阴金，象征珠宝首饰。精致讲究、审美力高、善于表达，但容易挑剔。",
-    "壬": "壬水为阳水，象征江河大海。智慧深广、足智多谋、有远见，但容易不安定。",
-    "癸": "癸水为阴水，象征雨露溪流。聪明细腻、感受力强、直觉好，但容易多愁善感。"
+  const dayMasterInfo: Record<string, { symbol: string; nature: string; positive: string; negative: string; style: string }> = {
+    "甲": { symbol: "参天大树", nature: "阳木", positive: "正直、有主见、有担当、目标明确", negative: "固执、不易变通、过于直接", style: "领导者型——先定方向再行动，宁折不弯" },
+    "乙": { symbol: "花草藤蔓", nature: "阴木", positive: "柔韧、灵活、善于适应、有亲和力", negative: "决断力弱、容易依附、缺乏主见", style: "协调者型——善于绕道前行，以柔克刚" },
+    "丙": { symbol: "太阳烈火", nature: "阳火", positive: "热情、开朗、慷慨、有感染力和号召力", negative: "急躁、不持久、容易过度消耗", style: "表演者型——自带光环，喜欢被关注" },
+    "丁": { symbol: "灯烛星光", nature: "阴火", positive: "细腻、敏锐、专注、有洞察力和持久力", negative: "多虑、内耗、不易释怀", style: "分析者型——深入钻研，追求极致" },
+    "戊": { symbol: "高山大地", nature: "阳土", positive: "厚重、稳定、包容、值得信赖、有格局", negative: "固执、迟钝、不够灵活、难以改变", style: "守护者型——不动如山，以稳制变" },
+    "己": { symbol: "田园沃土", nature: "阴土", positive: "温和、务实、善于养育、有耐心、接地气", negative: "优柔寡断、过于退让、缺乏野心", style: "服务者型——默默付出，水到渠成" },
+    "庚": { symbol: "刀剑钢铁", nature: "阳金", positive: "果断、锐利、执行力强、重义气、有魄力", negative: "刚愎自用、不近人情、过于强势", style: "行动者型——说干就干，斩钉截铁" },
+    "辛": { symbol: "珠宝首饰", nature: "阴金", positive: "精致、讲究、审美高、善于表达、有品位", negative: "挑剔、矫情、过于敏感、容易受伤", style: "鉴赏者型——追求精致，注重细节" },
+    "壬": { symbol: "江河大海", nature: "阳水", positive: "智慧、深广、足智多谋、有远见、包容万物", negative: "不安定、难以聚焦、过于多变", style: "策略者型——善于谋划，运筹帷幄" },
+    "癸": { symbol: "雨露溪流", nature: "阴水", positive: "聪明、细腻、感受力强、直觉好、滋养他人", negative: "多愁善感、缺乏行动力、容易消极", style: "感受者型——心思缜密，善解人意" }
   };
 
-  const strengthDesc = scores.isStrong
-    ? "身旺之人自信心强、执行力强、不轻易被外界动摇。但也容易固执己见、独断专行。"
-    : "身弱之人适应力强、善于借力、心思细腻。但容易犹豫不决、需要外部支持。";
+  const info = dayMasterInfo[dm.value];
 
-  const tenGodPersonality: string[] = [];
-  const dist = profile.tenGodDistribution;
-  if ((dist.counts["比肩"] ?? 0) + (dist.counts["劫财"] ?? 0) >= 3) {
-    tenGodPersonality.push("比劫旺：独立意识强，不喜欢被安排，竞争心重但不外显。社交上重质不重量。");
+  // 十神性格分析 - 带权重计算
+  const biJie = (dist.counts["比肩"] ?? 0) + (dist.counts["劫财"] ?? 0);
+  const shiShang = (dist.counts["食神"] ?? 0) + (dist.counts["伤官"] ?? 0);
+  const caiXing = (dist.counts["正财"] ?? 0) + (dist.counts["偏财"] ?? 0);
+  const guanSha = (dist.counts["正官"] ?? 0) + (dist.counts["七杀"] ?? 0);
+  const yinXing = (dist.counts["正印"] ?? 0) + (dist.counts["偏印"] ?? 0);
+  const totalTenGods = biJie + shiShang + caiXing + guanSha + yinXing;
+
+  const tenGodWeights = [
+    { name: "比劫", count: biJie, pct: totalTenGods > 0 ? Math.round(biJie / totalTenGods * 100) : 0, traits: "独立、竞争、自我主张", detail: "比肩=同性相助（合作中的竞争），劫财=异性相夺（主动争取）" },
+    { name: "食伤", count: shiShang, pct: totalTenGods > 0 ? Math.round(shiShang / totalTenGods * 100) : 0, traits: "表达、创造、享受", detail: "食神=温和输出（享受过程），伤官=锐利表达（追求极致）" },
+    { name: "财星", count: caiXing, pct: totalTenGods > 0 ? Math.round(caiXing / totalTenGods * 100) : 0, traits: "务实、经营、资源", detail: "正财=稳定收入（踏实积累），偏财=灵活运作（投资经营）" },
+    { name: "官杀", count: guanSha, pct: totalTenGods > 0 ? Math.round(guanSha / totalTenGods * 100) : 0, traits: "责任、压力、约束", detail: "正官=秩序规则（自律），七杀=外部压力（被推着走）" },
+    { name: "印星", count: yinXing, pct: totalTenGods > 0 ? Math.round(yinXing / totalTenGods * 100) : 0, traits: "学习、支持、保护", detail: "正印=正统学习（系统性），偏印=偏门灵感（非主流思路）" }
+  ].sort((a, b) => b.count - a.count);
+
+  const tenGodRows = tenGodWeights.map(t => {
+    const barWidth = totalTenGods > 0 ? (t.count / totalTenGods * 100) : 0;
+    const level = t.pct >= 30 ? "dominant" : t.pct >= 20 ? "" : "weak";
+    return `
+      <tr class="${level}">
+        <td>${t.name}</td>
+        <td>${t.count}</td>
+        <td>${t.pct}%</td>
+        <td><div class="mini-bar"><div class="mini-bar-fill" style="width:${barWidth}%"></div></div></td>
+        <td>${t.traits}</td>
+      </tr>`;
+  }).join("");
+
+  // 性格综合画像 - 基于多维度
+  const personalityTraits: Array<{ dimension: string; weight: string; analysis: string; formula: string }> = [];
+
+  // 维度1: 日主本性 (30%)
+  personalityTraits.push({
+    dimension: "日主本性",
+    weight: "30%",
+    analysis: info ? `${info.nature}（${info.symbol}）→ ${info.style}` : "",
+    formula: "日干五行 + 阴阳属性 → 基础性格底色"
+  });
+
+  // 维度2: 身旺身弱 (20%)
+  const strengthRatio = scores.strongValue / (scores.strongValue + scores.weakValue);
+  personalityTraits.push({
+    dimension: "身强弱度",
+    weight: "20%",
+    analysis: scores.isStrong
+      ? `身强值${scores.strongValue}/总${scores.strongValue + scores.weakValue}(${Math.round(strengthRatio * 100)}%) → 自信、执行力强、不易动摇、容易固执`
+      : `身强值${scores.strongValue}/总${scores.strongValue + scores.weakValue}(${Math.round(strengthRatio * 100)}%) → 灵活、善借力、需支持、容易犹豫`,
+    formula: "身强值 = 比劫分 + 印星分；占比 > 53% 为旺"
+  });
+
+  // 维度3: 十神主轴 (25%)
+  const dominant = tenGodWeights[0];
+  const secondary = tenGodWeights[1];
+  personalityTraits.push({
+    dimension: "十神主轴",
+    weight: "25%",
+    analysis: `第一主轴「${dominant.name}」(${dominant.pct}%) + 第二主轴「${secondary.name}」(${secondary.pct}%) → 性格色彩由此组合决定`,
+    formula: "各类十神出现次数 / 总十神数 → 占比最高者为主轴"
+  });
+
+  // 维度4: 日支（内心世界）(15%)
+  const dayBranchTenGods = profile.chart.pillars[2].branch.hiddenStems.map(h => h.tenGod).join("、");
+  personalityTraits.push({
+    dimension: "日支内心",
+    weight: "15%",
+    analysis: `日支${dayBranch}（藏${dayBranchTenGods}）坐${diShi}位 → 内心深处的需求和伴侣期待`,
+    formula: "日支藏干十神 = 潜意识需求；地势 = 内在能量状态"
+  });
+
+  // 维度5: 冲合动态 (10%)
+  const clashes = profile.relations.filter(r => ["六冲", "六害", "相刑"].includes(r.type));
+  const combines = profile.relations.filter(r => ["六合", "三合", "三会", "天干五合"].includes(r.type));
+  personalityTraits.push({
+    dimension: "冲合动态",
+    weight: "10%",
+    analysis: `合${combines.length}个 / 冲刑害${clashes.length}个 → ${clashes.length > combines.length ? "动态型性格，变动多、闲不住" : clashes.length === 0 ? "静态型性格，稳定安逸" : "动静结合"}`,
+    formula: "冲刑害数 > 合数 → 好动；反之 → 安稳"
+  });
+
+  const formulaRows = personalityTraits.map(t => `
+    <tr>
+      <td>${t.dimension}</td>
+      <td>${t.weight}</td>
+      <td>${t.analysis}</td>
+      <td class="formula-cell">${t.formula}</td>
+    </tr>`).join("");
+
+  // 详细性格描述
+  const detailSections: string[] = [];
+
+  if (info) {
+    detailSections.push(`
+      <div class="personality-detail">
+        <h4>日主「${dm.value}」—— ${info.symbol}</h4>
+        <div class="trait-grid">
+          <div class="trait-item positive"><span class="trait-label">优势</span>${info.positive}</div>
+          <div class="trait-item negative"><span class="trait-label">阴影</span>${info.negative}</div>
+          <div class="trait-item style"><span class="trait-label">行事风格</span>${info.style}</div>
+        </div>
+      </div>`);
   }
-  if ((dist.counts["食神"] ?? 0) + (dist.counts["伤官"] ?? 0) >= 3) {
-    tenGodPersonality.push("食伤旺：表达欲强，有创造力和审美力，追求品质。适合创作和输出型工作。");
+
+  // 身旺弱对性格的具体影响
+  if (scores.isStrong) {
+    detailSections.push(`
+      <div class="personality-detail">
+        <h4>身旺特征（强度 ${Math.round(strengthRatio * 100)}%）</h4>
+        <ul>
+          <li><strong>决策风格</strong>：倾向先做再想，执行力强但可能忽略他人意见</li>
+          <li><strong>社交模式</strong>：选择性社交，重视对等关系，不轻易示弱</li>
+          <li><strong>抗压能力</strong>：高。外部压力不容易击垮你，但可能忽视身体信号</li>
+          <li><strong>核心课题</strong>：学会倾听、适当示弱、接纳不同观点</li>
+        </ul>
+      </div>`);
+  } else {
+    detailSections.push(`
+      <div class="personality-detail">
+        <h4>身弱特征（强度 ${Math.round(strengthRatio * 100)}%）</h4>
+        <ul>
+          <li><strong>决策风格</strong>：倾向深思熟虑，善于借力但可能错过时机</li>
+          <li><strong>社交模式</strong>：善于维护关系，有亲和力，但容易被消耗</li>
+          <li><strong>抗压能力</strong>：中等。需要支持系统（贵人、平台），孤军奋战容易疲劳</li>
+          <li><strong>核心课题</strong>：建立自信、敢于拒绝、减少对外部认可的依赖</li>
+        </ul>
+      </div>`);
   }
-  if ((dist.counts["正财"] ?? 0) + (dist.counts["偏财"] ?? 0) >= 3) {
-    tenGodPersonality.push("财星旺：务实、有经营意识、对资源敏感。做事注重结果和回报。");
+
+  // 十神组合性格描述
+  const comboDescriptions: string[] = [];
+  if (dominant.name === "比劫" && dominant.pct >= 25) {
+    comboDescriptions.push(`<li><strong>比劫主导(${dominant.pct}%)</strong>：独立意识极强。宁可自己多走弯路，也不愿照别人的路线走。表面随和但内心有明确的评判标准。朋友不多但每个都深交。</li>`);
   }
-  if ((dist.counts["正官"] ?? 0) + (dist.counts["七杀"] ?? 0) >= 3) {
-    tenGodPersonality.push("官杀旺：责任感重、对自己要求高、在压力下反而出色。但容易给自己太大压力。");
+  if (dominant.name === "食伤" || (secondary.name === "食伤" && secondary.pct >= 20)) {
+    const shiPct = tenGodWeights.find(t => t.name === "食伤")!.pct;
+    comboDescriptions.push(`<li><strong>食伤活跃(${shiPct}%)</strong>：天生的创作者和表达者。对品质有追求，做事讲究"调性"。享受从零到一的过程快感。有口福和审美力。</li>`);
   }
-  if ((dist.counts["正印"] ?? 0) + (dist.counts["偏印"] ?? 0) >= 3) {
-    tenGodPersonality.push("印星旺：学习力强、有人缘、善于吸收。但容易想太多做太少。");
+  if (dominant.name === "官杀" || (secondary.name === "官杀" && secondary.pct >= 20)) {
+    const guanPct = tenGodWeights.find(t => t.name === "官杀")!.pct;
+    comboDescriptions.push(`<li><strong>官杀压力(${guanPct}%)</strong>：对自己要求高，责任感重。在压力下反而发挥好。但容易给自己太大负担，需要学会放松和"够好就行"。</li>`);
   }
+  if (dominant.name === "财星" || (secondary.name === "财星" && secondary.pct >= 20)) {
+    const caiPct = tenGodWeights.find(t => t.name === "财星")!.pct;
+    comboDescriptions.push(`<li><strong>财星务实(${caiPct}%)</strong>：天生的资源整合者。对"值不值"有直觉判断力。做事看结果，不做无意义的消耗。</li>`);
+  }
+  if (dominant.name === "印星" || (secondary.name === "印星" && secondary.pct >= 20)) {
+    const yinPct = tenGodWeights.find(t => t.name === "印星")!.pct;
+    comboDescriptions.push(`<li><strong>印星好学(${yinPct}%)</strong>：学习吸收力极强，接受新事物快。有人缘和贵人运。但容易"想太多做太少"，需要食伤来推动输出。</li>`);
+  }
+
+  if (comboDescriptions.length > 0) {
+    detailSections.push(`
+      <div class="personality-detail">
+        <h4>十神性格色彩</h4>
+        <ul>${comboDescriptions.join("")}</ul>
+      </div>`);
+  }
+
+  // 冲合对性格的影响
+  if (clashes.length > 0 || combines.length > 0) {
+    const dynamicTraits: string[] = [];
+    if (clashes.length >= 2) dynamicTraits.push("内心躁动、闲不住、需要变化和新刺激");
+    if (clashes.length === 1) dynamicTraits.push("有动态因子但可控，适度变化中成长");
+    if (combines.length >= 2) dynamicTraits.push("善于建立连接、有合作天赋、容易被人牵动");
+    const dayBranchClash = clashes.find(r => r.members.includes(dayBranch));
+    if (dayBranchClash) dynamicTraits.push(`日支逢${dayBranchClash.type}——亲密关系中容易有摩擦和波动`);
+
+    detailSections.push(`
+      <div class="personality-detail">
+        <h4>冲合对性格的塑造</h4>
+        <p>命盘中 ${combines.length} 合 / ${clashes.length} 冲刑害：</p>
+        <ul>${dynamicTraits.map(t => `<li>${t}</li>`).join("")}</ul>
+      </div>`);
+  }
+
+  // 喜好与生活偏好
+  const prefSections = `
+    <div class="personality-detail">
+      <h4>生活喜好推导</h4>
+      <table class="pref-table">
+        <tr><th>维度</th><th>偏好</th><th>推导逻辑</th></tr>
+        <tr><td>做事风格</td><td>${scores.isStrong ? "先做后想、追求效率" : "深思熟虑、追求稳妥"}</td><td>身${scores.isStrong ? "旺" : "弱"} → ${scores.isStrong ? "执行力导向" : "安全感导向"}</td></tr>
+        <tr><td>学习方式</td><td>${shiShang >= biJie ? "动手型——做中学最快" : yinXing >= 2 ? "吸收型——读书听课效率高" : "混合型"}</td><td>${shiShang >= biJie ? "食伤≥比劫 → 输出即学习" : yinXing >= 2 ? "印星≥2 → 被动接收型" : "均衡分布"}</td></tr>
+        <tr><td>社交风格</td><td>${biJie >= 3 ? "少而精，重质不重量" : caiXing >= 3 ? "广而浅，资源型社交" : "选择性社交"}</td><td>${biJie >= 3 ? "比劫≥3 → 独立型社交" : caiXing >= 3 ? "财星≥3 → 经营型社交" : "无极端偏向"}</td></tr>
+        <tr><td>消费偏好</td><td>${shiShang >= 2 ? "追求品质和体验" : caiXing >= 3 ? "注重性价比和回报" : "量入为出"}</td><td>${shiShang >= 2 ? "食伤旺 → 品质导向" : caiXing >= 3 ? "财星旺 → 投资导向" : "中性"}</td></tr>
+        <tr><td>适合方向</td><td>${[...favorable.most, ...favorable.good].map(e => elSpan(e)).join(" ")} 相关</td><td>喜用神五行 → 对应行业和环境</td></tr>
+        <tr><td>颜色方位</td><td>${[...favorable.most, ...favorable.good].map(e => `<span style="color:${ELEMENT_COLOR[e]}">${e}</span>`).join(" ")} / ${[...favorable.most, ...favorable.good].map(e => ({"木":"东","火":"南","土":"中","金":"西","水":"北"}[e])).join("")}</td><td>喜用五行 → 对应颜色和方位</td></tr>
+      </table>
+    </div>`;
 
   return `
     <div class="card">
-      <h2>性格分析</h2>
-      <div class="personality-section">
-        <h3>日主特质：${dm.value}${dm.element}</h3>
-        <p>${dayMasterDescriptions[dm.value] || ""}</p>
-        <p>日支${dayBranch}（${diShi}位）：${strengthDesc}</p>
+      <h2>性格深度分析</h2>
+
+      <div class="methodology-box">
+        <h3>分析方法论</h3>
+        <p>性格由以下五个维度综合推导，各维度带权重：</p>
+        <table class="method-table">
+          <tr><th>维度</th><th>权重</th><th>本命分析</th><th>计算公式</th></tr>
+          ${formulaRows}
+        </table>
       </div>
+
       <div class="personality-section">
-        <h3>十神性格色彩</h3>
-        ${tenGodPersonality.length > 0 ? `<ul>${tenGodPersonality.map(t => `<li>${t}</li>`).join("")}</ul>` : "<p>十神分布较均匀，性格较为平衡。</p>"}
+        <h3>十神占比分布</h3>
+        <table class="tengod-weight-table">
+          <tr><th>类别</th><th>次数</th><th>占比</th><th>强度</th><th>性格关键词</th></tr>
+          ${tenGodRows}
+        </table>
+        <p class="note">注：占比≥30%为主导（高亮），≥20%为显著，＜15%为偏弱。十神细分含义见右列。</p>
       </div>
-      <div class="personality-section">
-        <h3>喜好倾向</h3>
-        <ul>
-          <li><strong>适合方向</strong>：${favorable.most.map(e => elSpan(e)).join("")}${favorable.good.map(e => elSpan(e)).join("")} 相关行业和环境</li>
-          <li><strong>颜色偏好</strong>：${[...favorable.most, ...favorable.good].map(e => `<span style="color:${ELEMENT_COLOR[e]}">${e}色(${ELEMENT_COLOR[e]})</span>`).join(" ")}</li>
-          <li><strong>方位</strong>：${[...favorable.most, ...favorable.good].map(e => ({"木":"东方","火":"南方","土":"中央","金":"西方","水":"北方"}[e])).join("、")}</li>
-        </ul>
-      </div>
+
+      ${detailSections.join("")}
+      ${prefSections}
     </div>`;
 }
 
