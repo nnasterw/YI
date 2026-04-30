@@ -346,19 +346,66 @@ function renderLuckCyclesOverview(profile: BaziProfile): string {
     </div>`;
 }
 
+function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; analysis: FlowAnalysis }): string {
+  const dims = [
+    { key: "overall", label: "整体", icon: "🔮" },
+    { key: "career", label: "事业", icon: "💼" },
+    { key: "relationships", label: "感情", icon: "❤️" },
+    { key: "health", label: "健康", icon: "🏥" },
+    { key: "wealth", label: "财富", icon: "💰" }
+  ];
+
+  const dimSections = dims.map(d => {
+    const dim = (a.analysis as Record<string, { tone: string; summary: string[] }>)[d.key];
+    if (!dim) return "";
+    return `
+      <div class="annual-dim ${dim.tone}">
+        <div class="annual-dim-header">
+          <span class="dim-icon">${d.icon}</span>
+          <span class="dim-label">${d.label}</span>
+          ${toneLabel(dim.tone)}
+        </div>
+        <ul class="dim-details">
+          ${dim.summary.map(s => `<li>${s}</li>`).join("")}
+        </ul>
+      </div>`;
+  }).join("");
+
+  const signals = a.analysis.signals || [];
+  const signalHtml = signals.length > 0 ? `
+    <div class="annual-signals">
+      <h5>触发信号</h5>
+      <div class="signal-list">
+        ${signals.map(s => `<span class="signal-tag ${s.tone}" title="${s.description}">${s.type}</span>`).join("")}
+      </div>
+    </div>` : "";
+
+  return `
+    <details class="annual-detail">
+      <summary class="annual-summary">
+        <span class="annual-year">${a.year}</span>
+        <span class="annual-age">${a.age}岁</span>
+        <span class="ganzhi">${a.ganZhi}</span>
+        <span class="annual-tones">
+          ${toneLabel(a.analysis.overall.tone)}
+          ${toneLabel(a.analysis.career.tone)}
+          ${toneLabel(a.analysis.relationships.tone)}
+          ${toneLabel(a.analysis.health.tone)}
+          ${toneLabel(a.analysis.wealth.tone)}
+        </span>
+      </summary>
+      <div class="annual-expanded">
+        ${signalHtml}
+        <div class="annual-dims-grid">
+          ${dimSections}
+        </div>
+      </div>
+    </details>`;
+}
+
 function renderLuckCycleDetails(profile: BaziProfile): string {
   const sections = profile.luckCycles.cycles.map(cycle => {
-    const annualRows = cycle.annuals.map(a => `
-      <tr>
-        <td>${a.year}</td>
-        <td>${a.age}</td>
-        <td class="ganzhi">${a.ganZhi}</td>
-        <td>${toneLabel(a.analysis.overall.tone)}</td>
-        <td>${toneLabel(a.analysis.career.tone)}</td>
-        <td>${toneLabel(a.analysis.relationships.tone)}</td>
-        <td>${toneLabel(a.analysis.health.tone)}</td>
-        <td>${toneLabel(a.analysis.wealth.tone)}</td>
-      </tr>`).join("");
+    const annualItems = cycle.annuals.map(a => renderAnnualDetail(a)).join("");
 
     return `
       <details class="cycle-detail">
@@ -368,20 +415,25 @@ function renderLuckCycleDetails(profile: BaziProfile): string {
           ${toneLabel(cycle.analysis.overall.tone)}
         </summary>
         <div class="cycle-analysis">
-          <p><strong>整体</strong>：${cycle.analysis.overall.summary.join(" ")}</p>
-          <p><strong>事业</strong>：${cycle.analysis.career.summary.join(" ")}</p>
-          <p><strong>感情</strong>：${cycle.analysis.relationships.summary.join(" ")}</p>
-          <p><strong>健康</strong>：${cycle.analysis.health.summary.join(" ")}</p>
-          <p><strong>财富</strong>：${cycle.analysis.wealth.summary.join(" ")}</p>
+          <div class="cycle-dims">
+            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${cycle.analysis.overall.summary.join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">💼</span><strong>事业</strong> ${toneLabel(cycle.analysis.career.tone)}：${cycle.analysis.career.summary.join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">❤️</span><strong>感情</strong> ${toneLabel(cycle.analysis.relationships.tone)}：${cycle.analysis.relationships.summary.join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">🏥</span><strong>健康</strong> ${toneLabel(cycle.analysis.health.tone)}：${cycle.analysis.health.summary.join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">💰</span><strong>财富</strong> ${toneLabel(cycle.analysis.wealth.tone)}：${cycle.analysis.wealth.summary.join(" ")}</div>
+          </div>
         </div>
-        <table class="annual-table">
-          <tr><th>年</th><th>龄</th><th>干支</th><th>整体</th><th>事业</th><th>感情</th><th>健康</th><th>财富</th></tr>
-          ${annualRows}
-        </table>
+        <div class="annual-list">
+          <div class="annual-list-header">
+            <span>年份</span><span>年龄</span><span>干支</span>
+            <span>整体 / 事业 / 感情 / 健康 / 财富</span>
+          </div>
+          ${annualItems}
+        </div>
       </details>`;
   }).join("");
 
-  return `<div class="card"><h2>大运流年详情</h2>${sections}</div>`;
+  return `<div class="card"><h2>大运流年详情</h2><p class="hint">点击每一年可展开查看各维度详细分析和触发信号</p>${sections}</div>`;
 }
 
 function renderPersonality(profile: BaziProfile, scores: ElementScores, favorable: FavorableElements): string {
@@ -645,6 +697,35 @@ function renderLifetimeLookup(dayElement: Element, favorable: FavorableElements)
     </div>`;
 }
 
+function renderAiChat(): string {
+  return `
+    <div class="card ai-chat-card">
+      <h2>AI 命理问询</h2>
+      <p class="hint">基于你的命盘数据，向 AI 提问关于运势、选择、性格等任何命理相关问题。</p>
+      <details class="ai-config">
+        <summary>API 设置</summary>
+        <div class="ai-config-content">
+          <label>API Key（Claude / OpenAI）
+            <input type="password" id="ai-api-key" placeholder="sk-... 或 留空使用默认" />
+          </label>
+          <label style="margin-top:0.5rem;display:block">API 地址（可选）
+            <input type="text" id="ai-api-url" placeholder="https://api.anthropic.com" />
+          </label>
+          <label style="margin-top:0.5rem;display:block">模型
+            <input type="text" id="ai-model" placeholder="claude-sonnet-4-5-20250514" value="claude-sonnet-4-5-20250514" />
+          </label>
+        </div>
+      </details>
+      <div class="ai-chat-messages" id="ai-messages">
+        <div class="ai-msg system">排盘完成后可以在这里提问，AI 会结合你的命盘数据回答。</div>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="ai-input" placeholder="问一下：今年适合换工作吗？/ 我的性格适合做什么？" />
+        <button id="ai-send-btn">发送</button>
+      </div>
+    </div>`;
+}
+
 export function renderReport(profile: BaziProfile): string {
   const scores = computeElementScores(profile);
   const dayElement = profile.chart.dayMaster.element;
@@ -662,6 +743,7 @@ export function renderReport(profile: BaziProfile): string {
     renderNarrativeAnalysis(profile),
     renderLuckCyclesOverview(profile),
     renderLuckCycleDetails(profile),
-    renderLifetimeLookup(dayElement, favorable)
+    renderLifetimeLookup(dayElement, favorable),
+    renderAiChat()
   ].join("");
 }
