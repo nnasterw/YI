@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>八字命盘分析</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>四柱八字命盘分析</h1>
+      <p class="subtitle">输入出生信息，生成完整命格报告</p>
+    </header>
+
+    <section id="input-section">
+      <form id="bazi-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="calendar">历法</label>
+            <select id="calendar">
+              <option value="solar">阳历</option>
+              <option value="lunar">农历</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="gender">性别</label>
+            <select id="gender">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="year">年</label>
+            <input type="number" id="year" min="1900" max="2100" value="1999" />
+          </div>
+          <div class="form-group">
+            <label for="month">月</label>
+            <input type="number" id="month" min="1" max="12" value="1" />
+          </div>
+          <div class="form-group">
+            <label for="day">日</label>
+            <input type="number" id="day" min="1" max="31" value="6" />
+          </div>
+          <div class="form-group">
+            <label for="hour">时</label>
+            <input type="number" id="hour" min="0" max="23" value="15" />
+          </div>
+          <div class="form-group">
+            <label for="minute">分</label>
+            <input type="number" id="minute" min="0" max="59" value="0" />
+          </div>
+        </div>
+
+        <div class="form-row" id="lunar-options" style="display:none">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="leap-month" />
+              闰月
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row advanced-toggle">
+          <details>
+            <summary>高级选项</summary>
+            <div class="form-group">
+              <label for="sect">子时划分</label>
+              <select id="sect">
+                <option value="2">晚子时（默认）</option>
+                <option value="1">早子时</option>
+              </select>
+            </div>
+          </details>
+        </div>
+
+        <button type="submit" id="submit-btn">排盘分析</button>
+      </form>
+    </section>
+
+    <section id="output-section" style="display:none">
+      <div id="report"></div>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

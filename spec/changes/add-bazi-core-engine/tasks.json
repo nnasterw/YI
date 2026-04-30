@@ -1,0 +1,57 @@
+[
+  {
+    "number": 1,
+    "category": "阶段 1：初始化",
+    "task": "创建 OpenSpec 与 TypeScript 项目骨架",
+    "steps": [
+      { "step": "创建 spec 目录与变更目录", "completed": true },
+      { "step": "创建 living spec 基线文件", "completed": true },
+      { "step": "创建 package.json 与 tsconfig.json", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：命盘生成",
+    "task": "实现阳历/农历输入标准化和四柱排盘",
+    "steps": [
+      { "step": "定义输入输出类型", "completed": true },
+      { "step": "实现输入校验与标准化", "completed": true },
+      { "step": "接入 lunar-javascript 输出四柱、命宫、身宫、胎元", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：结构化分析",
+    "task": "实现关系分析与大运流年输出",
+    "steps": [
+      { "step": "统计五行与十神分布", "completed": true },
+      { "step": "实现合冲刑害、三合、三会检测", "completed": true },
+      { "step": "输出起运、大运与流年结构", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：交付入口",
+    "task": "提供 CLI 与使用文档",
+    "steps": [
+      { "step": "实现命令行参数解析", "completed": true },
+      { "step": "输出结构化 JSON", "completed": true },
+      { "step": "补充 README 示例", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 5,
+    "category": "阶段 5：验证",
+    "task": "增加测试并校验结果",
+    "steps": [
+      { "step": "验证标准四柱结果", "completed": true },
+      { "step": "验证子时分流 sect 行为", "completed": true },
+      { "step": "验证起运与关系分析", "completed": true }
+    ],
+    "passes": true
+  }
+]

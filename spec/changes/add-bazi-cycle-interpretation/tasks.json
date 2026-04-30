@@ -1,0 +1,57 @@
+[
+  {
+    "number": 1,
+    "category": "阶段 1：规范",
+    "task": "创建流运解读变更",
+    "steps": [
+      { "step": "创建 spec/changes/add-bazi-cycle-interpretation 目录", "completed": true },
+      { "step": "编写 proposal.md", "completed": true },
+      { "step": "编写 spec-delta.md 与任务清单", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：数据结构",
+    "task": "扩展流运分析类型",
+    "steps": [
+      { "step": "为大运和流年新增分析结构类型", "completed": true },
+      { "step": "保持既有输出兼容", "completed": true },
+      { "step": "同步 index 导出", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：解释引擎",
+    "task": "实现大运和流年分析逻辑",
+    "steps": [
+      { "step": "计算流运十神与五行交互", "completed": true },
+      { "step": "识别流运与原局的冲合刑害信号", "completed": true },
+      { "step": "生成 overall/career/relationships/health/wealth 五维分析", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：集成",
+    "task": "集成到输出与文档",
+    "steps": [
+      { "step": "把解读挂到大运和流年对象", "completed": true },
+      { "step": "更新 CLI 输出示例", "completed": true },
+      { "step": "补充 README 说明", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 5,
+    "category": "阶段 5：验证",
+    "task": "补充测试并验证结果",
+    "steps": [
+      { "step": "验证大运解读字段存在", "completed": true },
+      { "step": "验证流年解读字段存在", "completed": true },
+      { "step": "验证典型关系信号进入分析结果", "completed": true }
+    ],
+    "passes": true
+  }
+]

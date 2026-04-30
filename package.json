@@ -1,0 +1,30 @@
+{
+  "name": "yi-bazi-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Four Pillars of Destiny core engine focused on structured BaZi chart generation and analysis.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "bazi-core": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "dev:cli": "tsx src/cli.ts",
+    "dev:web": "vite --config web/vite.config.ts",
+    "build:web": "vite build --config web/vite.config.ts"
+  },
+  "dependencies": {
+    "lunar-javascript": "^1.7.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.2",
+    "vitest": "^3.1.3",
+    "wrangler": "^4.86.0"
+  }
+}
