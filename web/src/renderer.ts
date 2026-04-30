@@ -743,7 +743,6 @@ export function renderReport(profile: BaziProfile): string {
     renderNarrativeAnalysis(profile),
     renderLuckCyclesOverview(profile),
     renderLuckCycleDetails(profile),
-    renderLifetimeLookup(dayElement, favorable),
-    renderAiChat()
+    renderLifetimeLookup(dayElement, favorable)
   ].join("");
 }
