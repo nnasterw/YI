@@ -103,52 +103,102 @@ function initAiChat(profile: BaziProfile): void {
     const question = inputEl.value.trim();
     if (!question) return;
 
-    const apiKey = (document.getElementById("ai-api-key") as HTMLInputElement)?.value?.trim();
-    const apiUrl = (document.getElementById("ai-api-url") as HTMLInputElement)?.value?.trim() || "https://api.anthropic.com";
-    const model = (document.getElementById("ai-model") as HTMLInputElement)?.value?.trim() || "claude-sonnet-4-5-20250514";
-
-    if (!apiKey) {
-      addMessage("system", "请先在 API 设置中填入你的 API Key");
-      return;
-    }
+    const apiKey = (document.getElementById("ai-api-key") as HTMLInputElement)?.value?.trim() || "dummy";
+    const apiUrl = (document.getElementById("ai-api-url") as HTMLInputElement)?.value?.trim() || "http://127.0.0.1:3456/friday-thinking-highTemp";
+    const model = (document.getElementById("ai-model") as HTMLInputElement)?.value?.trim() || "claude-opus-4-6";
 
     inputEl.value = "";
     sendBtn.disabled = true;
     addMessage("user", question);
     chatHistory.push({ role: "user", content: question });
 
+    const assistantDiv = document.createElement("div");
+    assistantDiv.className = "ai-msg assistant";
+    assistantDiv.textContent = "思考中...";
+    messagesDiv!.appendChild(assistantDiv);
+    messagesDiv!.scrollTop = messagesDiv!.scrollHeight;
+
     try {
       const systemPrompt = buildSystemPrompt(profile);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01"
+      };
+      if (apiKey && apiKey !== "dummy") {
+        headers["x-api-key"] = apiKey;
+        headers["anthropic-dangerous-direct-browser-access"] = "true";
+      }
+
       const response = await fetch(`${apiUrl}/v1/messages`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
+        headers,
         body: JSON.stringify({
           model,
-          max_tokens: 2048,
+          max_tokens: 4096,
+          stream: true,
           system: systemPrompt,
           messages: chatHistory
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMsg = errorData?.error?.message || `HTTP ${response.status}`;
+        const errorText = await response.text().catch(() => "");
+        let errorMsg = `HTTP ${response.status}`;
+        try { errorMsg = JSON.parse(errorText)?.error?.message || errorMsg; } catch {}
+        assistantDiv.textContent = "";
         addMessage("system", `API 错误：${errorMsg}`);
         chatHistory.pop();
+        assistantDiv.remove();
         sendBtn.disabled = false;
         return;
       }
 
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || "（无回复）";
-      addMessage("assistant", reply);
-      chatHistory.push({ role: "assistant", content: reply });
+      // Parse SSE stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        assistantDiv.textContent = "（无法读取流）";
+        sendBtn.disabled = false;
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+      assistantDiv.textContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const event = JSON.parse(jsonStr);
+            if (event.type === "content_block_delta") {
+              if (event.delta?.type === "text_delta" && event.delta.text) {
+                fullText += event.delta.text;
+                assistantDiv.innerHTML = fullText.replace(/\n/g, "<br>");
+                messagesDiv!.scrollTop = messagesDiv!.scrollHeight;
+              }
+            }
+          } catch {}
+        }
+      }
+
+      if (!fullText) {
+        assistantDiv.textContent = "（无回复）";
+      }
+      chatHistory.push({ role: "assistant", content: fullText || "" });
     } catch (err) {
+      assistantDiv.textContent = "";
+      assistantDiv.remove();
       addMessage("system", `请求失败：${err instanceof Error ? err.message : String(err)}`);
       chatHistory.pop();
     } finally {

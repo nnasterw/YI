@@ -705,14 +705,14 @@ function renderAiChat(): string {
       <details class="ai-config">
         <summary>API 设置</summary>
         <div class="ai-config-content">
-          <label>API Key（Claude / OpenAI）
-            <input type="password" id="ai-api-key" placeholder="sk-... 或 留空使用默认" />
+          <label>API Key（留空则使用本地代理）
+            <input type="password" id="ai-api-key" placeholder="留空 = 本地 friday-proxy" />
           </label>
-          <label style="margin-top:0.5rem;display:block">API 地址（可选）
-            <input type="text" id="ai-api-url" placeholder="https://api.anthropic.com" />
+          <label style="margin-top:0.5rem;display:block">API 地址
+            <input type="text" id="ai-api-url" placeholder="http://127.0.0.1:3456/friday-thinking-highTemp" value="http://127.0.0.1:3456/friday-thinking-highTemp" />
           </label>
           <label style="margin-top:0.5rem;display:block">模型
-            <input type="text" id="ai-model" placeholder="claude-sonnet-4-5-20250514" value="claude-sonnet-4-5-20250514" />
+            <input type="text" id="ai-model" placeholder="claude-opus-4-6" value="claude-opus-4-6" />
           </label>
         </div>
       </details>
