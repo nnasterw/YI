@@ -1,4 +1,6 @@
+import { analyzeDayBranch, analyzeElementFlow, analyzeLuckCycleLayers, detectCombinations } from "@core/combinations";
 import { HIDDEN_STEM_WEIGHTS, MONTH_ELEMENT_STATE, STEM_META, computeTenGod, getElementInteraction } from "@core/constants";
+import type { DayBranchAnalysis, ElementFlowChain, TenGodCombination } from "@core/combinations";
 import type { BaziProfile, Element, FlowAnalysis, LuckCycle, PillarDetails } from "@core/types";
 
 const ELEMENT_COLOR: Record<string, string> = {
@@ -726,10 +728,106 @@ function renderAiChat(): string {
     </div>`;
 }
 
+function renderCombinations(combos: TenGodCombination[]): string {
+  if (combos.length === 0) return "";
+
+  const items = combos.map(c => `
+    <details class="combo-item">
+      <summary>
+        <span class="combo-name">${c.type}</span>
+        <span class="combo-strength">力度 ${'●'.repeat(Math.round(c.strength / 2))}${'○'.repeat(5 - Math.round(c.strength / 2))}</span>
+      </summary>
+      <div class="combo-details">
+        <div class="combo-dim"><span class="dim-icon">🧠</span><strong>性格</strong><p>${c.personality}</p></div>
+        <div class="combo-dim"><span class="dim-icon">💼</span><strong>事业</strong><p>${c.career}</p></div>
+        <div class="combo-dim"><span class="dim-icon">❤️</span><strong>感情</strong><p>${c.relationship}</p></div>
+        <div class="combo-dim"><span class="dim-icon">⚠️</span><strong>风险</strong><p>${c.risk}</p></div>
+      </div>
+    </details>`).join("");
+
+  return `
+    <div class="card">
+      <h2>十神组合分析</h2>
+      <p class="hint">十神不是孤立的标签——组合决定了你的行为模式和人生主题。点击展开查看详情。</p>
+      ${items}
+    </div>`;
+}
+
+function renderDayBranch(analysis: DayBranchAnalysis): string {
+  return `
+    <div class="card">
+      <h2>日支深度分析（配偶宫·内心世界）</h2>
+      <table class="info-table">
+        <tr><td>日支</td><td>${analysis.branch}（${analysis.element}）</td></tr>
+        <tr><td>地势</td><td>${analysis.diShi}</td></tr>
+        <tr><td>阳刃</td><td>${analysis.isYangRen ? '<span class="tone-bad">是 — 对配偶缺乏耐心</span>' : '否'}</td></tr>
+        <tr><td>藏干十神</td><td>${analysis.hiddenTenGods.join("、")}</td></tr>
+      </table>
+      <div class="personality-detail" style="margin-top:1rem">
+        <h4>配偶宫解读</h4>
+        <p>${analysis.spousePalace}</p>
+      </div>
+      <div class="personality-detail">
+        <h4>内心世界（${analysis.diShi}位）</h4>
+        <p>${analysis.innerWorld}</p>
+      </div>
+      <div class="personality-detail">
+        <h4>冲合风险</h4>
+        <p>${analysis.clashRisk}</p>
+      </div>
+    </div>`;
+}
+
+function renderElementFlow(chains: ElementFlowChain[]): string {
+  if (chains.length === 0) return "";
+
+  const items = chains.map(c => `
+    <div class="flow-chain ${c.isPositive ? 'flow-positive' : 'flow-negative'}">
+      <div class="flow-type">${c.isPositive ? '✓' : '✗'} ${c.type}</div>
+      <div class="flow-path">${c.chain}</div>
+      <div class="flow-desc">${c.description}</div>
+    </div>`).join("");
+
+  return `
+    <div class="card">
+      <h2>五行流通分析</h2>
+      <p class="hint">五行不是静态的数量对比——关键看能量是否形成流通链路。</p>
+      ${items}
+    </div>`;
+}
+
+function renderLuckCycleLayered(profile: BaziProfile, isStrong: boolean): string {
+  const rows = profile.luckCycles.cycles.map(c => {
+    const layers = analyzeLuckCycleLayers(c.ganZhi, profile.chart.dayMaster, isStrong);
+    return `
+      <tr>
+        <td>${c.index}</td>
+        <td class="ganzhi">${c.ganZhi}</td>
+        <td>${c.startAge}-${c.endAge}</td>
+        <td class="${layers.stemIsPositive ? 'check-pass' : 'tone-bad'}">${layers.stemTenGod}(${layers.stemElement})</td>
+        <td class="${layers.branchIsPositive ? 'check-pass' : 'tone-bad'}">${layers.branchElement}</td>
+        <td style="font-size:0.8rem">${layers.stemAnalysis}</td>
+      </tr>`;
+  }).join("");
+
+  return `
+    <div class="card">
+      <h2>大运分层分析</h2>
+      <p class="hint">天干主前5年（明面主题），地支主后5年（底层环境）。透出力量 &gt; 暗藏力量。</p>
+      <table class="luck-table">
+        <tr><th>运</th><th>干支</th><th>年龄</th><th>天干(前5年)</th><th>地支(后5年)</th><th>分析</th></tr>
+        ${rows}
+      </table>
+    </div>`;
+}
+
 export function renderReport(profile: BaziProfile): string {
   const scores = computeElementScores(profile);
   const dayElement = profile.chart.dayMaster.element;
   const favorable = judgeFavorable(dayElement, scores.isStrong);
+  const combos = detectCombinations(profile, scores.isStrong);
+  const dayBranch = analyzeDayBranch(profile);
+  const flowChains = analyzeElementFlow(profile, scores.isStrong);
 
   return [
     renderBasicInfo(profile),
@@ -737,10 +835,14 @@ export function renderReport(profile: BaziProfile): string {
     renderElementScores(scores, dayElement),
     renderStrengthJudgment(profile, scores),
     renderFavorable(dayElement, favorable, scores.isStrong),
+    renderCombinations(combos),
+    renderElementFlow(flowChains),
+    renderDayBranch(dayBranch),
     renderPersonality(profile, scores, favorable),
     renderTenGods(profile),
     renderRelations(profile),
     renderNarrativeAnalysis(profile),
+    renderLuckCycleLayered(profile, scores.isStrong),
     renderLuckCyclesOverview(profile),
     renderLuckCycleDetails(profile),
     renderLifetimeLookup(dayElement, favorable)

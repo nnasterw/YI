@@ -740,6 +740,105 @@ th {
   font-style: italic;
 }
 
+/* Combinations */
+.combo-item {
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.combo-item summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  background: rgba(255,255,255,0.02);
+}
+
+.combo-item summary:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.combo-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.combo-strength {
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.combo-details {
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+@media (max-width: 600px) {
+  .combo-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.combo-dim {
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.combo-dim p {
+  margin-top: 0.3rem;
+  color: var(--text-dim);
+}
+
+/* Element Flow */
+.flow-chain {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.flow-chain.flow-positive {
+  border-left: 3px solid var(--wood);
+}
+
+.flow-chain.flow-negative {
+  border-left: 3px solid var(--fire);
+}
+
+.flow-type {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.flow-path {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  background: rgba(233, 69, 96, 0.05);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.flow-desc {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
 /* AI Chat */
 .ai-chat-card {
   position: relative;

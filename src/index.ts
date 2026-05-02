@@ -1,4 +1,6 @@
 export { buildFlowAnalysis } from "./analysis";
+export { analyzeDayBranch, analyzeElementFlow, analyzeLuckCycleLayers, detectCombinations } from "./combinations";
+export type { DayBranchAnalysis, ElementFlowChain, LuckCycleLayers, TenGodCombination } from "./combinations";
 export { generateBaziProfile } from "./bazi";
 export {
   BRANCH_META,
