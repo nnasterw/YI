@@ -366,7 +366,77 @@ function renderLuckCyclesOverview(profile: BaziProfile): string {
     </div>`;
 }
 
-function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; analysis: FlowAnalysis }): string {
+function computeCorrectedTone(
+  ganZhi: string,
+  dayElement: Element,
+  isStrong: boolean,
+  monthBranch: string,
+  analysis: FlowAnalysis
+): { tone: string; score: number; breakdown: string } {
+  const [stem, branch] = [...ganZhi];
+  const stemEl = STEM_META[stem]?.element;
+  if (!stemEl) return { tone: analysis.overall.tone, score: 0, breakdown: "" };
+
+  const genMap: Record<Element, Element> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
+  const ctlMap: Record<Element, Element> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
+  const genByMap: Record<Element, Element> = { "木": "水", "火": "木", "土": "火", "金": "土", "水": "金" };
+  const ctlByMap: Record<Element, Element> = { "木": "金", "火": "水", "土": "木", "金": "火", "水": "土" };
+
+  // 1. 透出喜忌 (40%)
+  let touchu = 0;
+  if (isStrong) {
+    if (stemEl === genMap[dayElement]) touchu = 3;        // 食伤泄秀
+    else if (stemEl === ctlMap[dayElement]) touchu = 2;   // 财星耗身
+    else if (stemEl === ctlByMap[dayElement]) touchu = 1; // 官杀制身
+    else if (stemEl === genByMap[dayElement]) touchu = -2; // 印星生身(忌)
+    else if (stemEl === dayElement) touchu = -3;          // 比劫帮身(忌)
+  } else {
+    if (stemEl === genByMap[dayElement]) touchu = 3;      // 印星生身
+    else if (stemEl === dayElement) touchu = 2;           // 比劫帮身
+    else if (stemEl === ctlByMap[dayElement]) touchu = -1; // 官杀克身
+    else if (stemEl === genMap[dayElement]) touchu = -1;  // 食伤泄气
+    else if (stemEl === ctlMap[dayElement]) touchu = -2;  // 财星耗身
+  }
+
+  // 2. 十神作用 (25%) - 从引擎信号中提取
+  const signals = analysis.signals || [];
+  let tenGodScore = 0;
+  for (const s of signals) {
+    if (s.tone === "supportive") tenGodScore += 1;
+    else if (s.tone === "challenging") tenGodScore -= 1;
+  }
+  tenGodScore = Math.max(-3, Math.min(3, tenGodScore));
+
+  // 3. 冲合刑害 (20%) - 从信号中提取
+  let chongHe = 0;
+  for (const s of signals) {
+    if (s.category === "branch-relation") {
+      if (s.type === "六合" || s.type === "三合" || s.type === "三会") chongHe += 1;
+      else if (s.type === "六冲" || s.type === "六害" || s.type === "相刑") chongHe -= 1;
+    }
+  }
+  chongHe = Math.max(-3, Math.min(3, chongHe));
+
+  // 4. 调候 (10%) - 冬月生人见火+, 夏月生人见水+
+  let tiaohou = 0;
+  const coldMonths = ["亥", "子", "丑"];
+  const hotMonths = ["巳", "午", "未"];
+  if (coldMonths.includes(monthBranch) && (stemEl === "火")) tiaohou = 1;
+  if (hotMonths.includes(monthBranch) && (stemEl === "水")) tiaohou = 1;
+
+  // 5. 综合评分
+  const totalScore = touchu * 0.4 + tenGodScore * 0.25 + chongHe * 0.2 + tiaohou * 0.1;
+  const tone = totalScore >= 1 ? "supportive" : totalScore <= -1 ? "challenging" : "mixed";
+  const breakdown = `透出${touchu > 0 ? '+' : ''}${touchu}×40% 十神${tenGodScore > 0 ? '+' : ''}${tenGodScore}×25% 冲合${chongHe > 0 ? '+' : ''}${chongHe}×20% 调候${tiaohou > 0 ? '+' : ''}${tiaohou}×10% = ${totalScore.toFixed(1)}`;
+
+  return { tone, score: totalScore, breakdown };
+}
+
+function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; analysis: FlowAnalysis }, dayElement?: Element, isStrong?: boolean, monthBranch?: string): string {
+  const corrected = (dayElement && isStrong !== undefined && monthBranch)
+    ? computeCorrectedTone(a.ganZhi, dayElement, isStrong, monthBranch, a.analysis)
+    : null;
+
   const dims = [
     { key: "overall", label: "整体", icon: "🔮" },
     { key: "career", label: "事业", icon: "💼" },
@@ -400,6 +470,9 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
       </div>
     </div>` : "";
 
+  const overallTone = corrected ? corrected.tone : a.analysis.overall.tone;
+  const breakdownHtml = corrected ? `<div class="score-breakdown"><span class="score-value">${corrected.score >= 0 ? '+' : ''}${corrected.score.toFixed(1)}</span> <span class="score-formula">${corrected.breakdown}</span></div>` : "";
+
   return `
     <details class="annual-detail">
       <summary class="annual-summary">
@@ -407,7 +480,7 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
         <span class="annual-age">${a.age}岁</span>
         <span class="ganzhi">${a.ganZhi}</span>
         <span class="annual-tones">
-          ${toneLabel(a.analysis.overall.tone)}
+          ${toneLabel(overallTone)}
           ${toneLabel(a.analysis.career.tone)}
           ${toneLabel(a.analysis.relationships.tone)}
           ${toneLabel(a.analysis.health.tone)}
@@ -415,6 +488,7 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
         </span>
       </summary>
       <div class="annual-expanded">
+        ${breakdownHtml}
         ${signalHtml}
         <div class="annual-dims-grid">
           ${dimSections}
@@ -423,9 +497,10 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
     </details>`;
 }
 
-function renderLuckCycleDetails(profile: BaziProfile): string {
+function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
+  const monthBranch = profile.chart.pillars[1].branch.value;
   const sections = profile.luckCycles.cycles.map(cycle => {
-    const annualItems = cycle.annuals.map(a => renderAnnualDetail(a)).join("");
+    const annualItems = cycle.annuals.map(a => renderAnnualDetail(a, dayElement, isStrong, monthBranch)).join("");
 
     return `
       <details class="cycle-detail">
@@ -862,7 +937,7 @@ export function renderReport(profile: BaziProfile): string {
     renderNarrativeAnalysis(profile),
     renderLuckCycleLayered(profile, scores.isStrong),
     renderLuckCyclesOverview(profile),
-    renderLuckCycleDetails(profile),
+    renderLuckCycleDetails(profile, dayElement, scores.isStrong),
     renderLifetimeLookup(dayElement, favorable)
   ].join("");
 }
