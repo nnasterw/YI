@@ -438,35 +438,59 @@ export function buildFlowAnalysis(args: {
       break;
     case "正印":
     case "偏印":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "supportive",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，学习、保护、支持系统与恢复力增强。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}印星增强，更利于吸收、复盘和修正节奏。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}印星阶段适合学习、考证、拿方法论和构建支撑系统。` },
-          { dimension: "health", delta: 1, message: `${levelLabel}印星也有助于恢复和自我保护。` }
-        ]
-      );
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身旺不需要印星再生——容易想太多做太少、过度依赖外部认可。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}身旺逢印，精力过剩但缺乏有效出口，容易陷入空想。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}印星对身旺者利学习但不利决断——适合充电不适合冲锋。` },
+            { dimension: "wealth", delta: -1, message: `${levelLabel}印星克制食伤（泄秀通道被堵），变现能力受限。` }
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "supportive",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，学习、保护、支持系统与恢复力增强。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}印星增强，更利于吸收、复盘和修正节奏。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}印星阶段适合学习、考证、拿方法论和构建支撑系统。` },
+            { dimension: "health", delta: 1, message: `${levelLabel}印星也有助于恢复和自我保护。` }
+          ]
+        );
+      }
       break;
     case "比肩":
       registerSignal(
         {
           category: "ten-god",
           type: flowTenGod,
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，自我主张、同侪竞争与独立行动意愿变强。`,
+          tone: isStrong ? "challenging" : "supportive",
+          description: isStrong
+            ? `${levelLabel}天干${flowStem}为${flowTenGod}，身旺再逢比肩——竞争加剧、独断过头、破财风险升高。`
+            : `${levelLabel}天干${flowStem}为${flowTenGod}，同气相助、信心增强、有伙伴支持。`,
           members: [dayMaster.value, flowStem]
         },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}比肩阶段更强调自我决断和并行竞争。` },
-          { dimension: "wealth", delta: -1, message: `${levelLabel}比肩偏旺时，财务上要防分流、摊薄和资源平分。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}比肩强化自我立场，关系里更要注意互相让位。` }
-        ]
+        isStrong
+          ? [
+              { dimension: "overall", delta: -1, message: `${levelLabel}身旺逢比肩，固执和竞争心加倍，容易一意孤行。` },
+              { dimension: "wealth", delta: -2, message: `${levelLabel}比肩夺财——合伙分利、借钱不还、投资被分摊的风险高。` },
+              { dimension: "relationships", delta: -1, message: `${levelLabel}比肩强化自我立场，关系里更要注意互相让位。` }
+            ]
+          : [
+              { dimension: "overall", delta: 1, message: `${levelLabel}比肩帮身，信心和行动力增强。` },
+              { dimension: "career", delta: 1, message: `${levelLabel}有同类支持，适合合作和团队推进。` }
+            ]
       );
       break;
     case "劫财":
@@ -475,14 +499,21 @@ export function buildFlowAnalysis(args: {
           category: "ten-god",
           type: flowTenGod,
           tone: "challenging",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，竞争、夺财、冲动决策和资源消耗感更强。`,
+          description: isStrong
+            ? `${levelLabel}天干${flowStem}为${flowTenGod}，身旺逢劫——破财、争夺、冲动决策风险达到峰值。`
+            : `${levelLabel}天干${flowStem}为${flowTenGod}，劫财帮身有力但也争夺资源，得失参半。`,
           members: [dayMaster.value, flowStem]
         },
-        [
-          { dimension: "overall", delta: -1, message: `${levelLabel}劫财偏重，阶段更像强竞争和高消耗并存。` },
-          { dimension: "wealth", delta: -2, message: `${levelLabel}劫财对应资源争夺，财务上要防支出失控或被分流。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}劫财阶段更容易因边界与利益问题产生摩擦。` }
-        ]
+        isStrong
+          ? [
+              { dimension: "overall", delta: -2, message: `${levelLabel}身旺逢劫财，过旺之势加剧——独断、冲动、与人争利。` },
+              { dimension: "wealth", delta: -3, message: `${levelLabel}劫财夺财——这是最容易破财的年份。不借钱、不担保、不冲动投资。` },
+              { dimension: "relationships", delta: -1, message: `${levelLabel}劫财阶段更容易因边界与利益问题产生摩擦。` }
+            ]
+          : [
+              { dimension: "overall", delta: 0, message: `${levelLabel}劫财帮身但也争财，得失参半。` },
+              { dimension: "wealth", delta: -1, message: `${levelLabel}劫财仍有夺财之性，财务上需注意。` }
+            ]
       );
       break;
   }
