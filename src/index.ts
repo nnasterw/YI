@@ -12,6 +12,8 @@ export {
   getElementInteraction
 } from "./constants";
 export { analyzeNatalRelations } from "./relations";
+export { computeStrength } from "./scoring";
+export type { ElementScores } from "./scoring";
 export type {
   AnalysisTone,
   AnnualCycle,

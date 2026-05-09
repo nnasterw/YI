@@ -3,6 +3,7 @@ import { buildElementBalance, buildFlowAnalysis, buildNarrativeAnalysis, buildTe
 import { BRANCH_META, STEM_META, computeTenGod } from "./constants";
 import { normalizeBaziInput, toGenderNumber } from "./input";
 import { analyzeNatalRelations } from "./relations";
+import { computeStrength } from "./scoring";
 import type {
   AnnualCycle,
   BaziInput,
@@ -135,8 +136,9 @@ function buildLuckCycles(args: {
   dayMaster: PillarDetails["stem"];
   natalPillars: PillarDetails[];
   gender: Gender;
+  isStrong: boolean;
 }): BaziProfile["luckCycles"] {
-  const { yun, count, annualCount, dayMaster, natalPillars, gender } = args;
+  const { yun, count, annualCount, dayMaster, natalPillars, gender, isStrong } = args;
 
   const cycles = yun
     .getDaYun(count + 1)
@@ -149,7 +151,8 @@ function buildLuckCycles(args: {
         level: "cycle",
         dayMaster,
         natalPillars,
-        gender
+        gender,
+        isStrong
       });
 
       const annuals = cycle
@@ -164,7 +167,8 @@ function buildLuckCycles(args: {
             dayMaster,
             natalPillars,
             gender,
-            parentGanZhi: cycleGanZhi
+            parentGanZhi: cycleGanZhi,
+            isStrong
           })
         }));
 
@@ -260,6 +264,7 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
   const relations = analyzeNatalRelations(pillars);
   const elementBalance = buildElementBalance(pillars);
   const tenGodDistribution = buildTenGodDistribution(pillars);
+  const strength = computeStrength(pillars, dayMaster.element);
   const yun = eightChar.getYun(toGenderNumber(input.gender), input.luckSect);
   const luckCycles = buildLuckCycles({
     yun,
@@ -267,7 +272,8 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     annualCount: input.annualCycleCount,
     dayMaster,
     natalPillars: pillars,
-    gender: input.gender
+    gender: input.gender,
+    isStrong: strength.isStrong
   });
   const analysis = buildNarrativeAnalysis({
     dayMaster,
@@ -298,6 +304,11 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     relations,
     elementBalance,
     tenGodDistribution,
+    strengthAssessment: {
+      isStrong: strength.isStrong,
+      strongValue: strength.strongValue,
+      weakValue: strength.weakValue
+    },
     luckCycles,
     analysis
   };

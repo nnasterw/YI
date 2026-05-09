@@ -184,6 +184,11 @@ export interface BaziProfile {
   relations: RelationRecord[];
   elementBalance: ElementBalance;
   tenGodDistribution: TenGodDistribution;
+  strengthAssessment: {
+    isStrong: boolean;
+    strongValue: number;
+    weakValue: number;
+  };
   luckCycles: LuckCycles;
   analysis: BaziAnalysis;
 }

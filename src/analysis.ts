@@ -304,8 +304,9 @@ export function buildFlowAnalysis(args: {
   natalPillars: PillarDetails[];
   gender: Gender;
   parentGanZhi?: string;
+  isStrong?: boolean;
 }): FlowAnalysis {
-  const { ganZhi, level, dayMaster, natalPillars, gender, parentGanZhi } = args;
+  const { ganZhi, level, dayMaster, natalPillars, gender, parentGanZhi, isStrong = true } = args;
   const [flowStem, flowBranch] = [...ganZhi];
   const state = createFlowScoreState();
   const signals: FlowSignal[] = [];
@@ -740,6 +741,33 @@ export function buildFlowAnalysis(args: {
               }
             ]
       );
+    }
+  }
+
+  // v2 身旺身弱校正：调整整体分数
+  const flowStemElement = STEM_META[flowStem].element;
+  const stemInteractionType = getElementInteraction(dayMaster.element, flowStemElement);
+  if (isStrong) {
+    if (stemInteractionType === "generated-by") {
+      state.overall.score -= 2;
+      if (!state.overall.messages.some(m => m.includes("身旺忌印"))) {
+        state.overall.messages.push(`身旺忌印——${levelLabel}天干${flowStem}印星生身反为忌，不宜过度依赖外部支持。`);
+      }
+    } else if (stemInteractionType === "same") {
+      state.overall.score -= 2;
+      if (!state.overall.messages.some(m => m.includes("身旺忌比"))) {
+        state.overall.messages.push(`身旺忌比——${levelLabel}天干${flowStem}比劫帮身过旺，竞争加剧、破财风险增加。`);
+      }
+    } else if (stemInteractionType === "generate") {
+      state.overall.score += 1;
+    } else if (stemInteractionType === "control") {
+      state.overall.score += 1;
+    }
+  } else {
+    if (stemInteractionType === "generated-by" || stemInteractionType === "same") {
+      state.overall.score += 1;
+    } else if (stemInteractionType === "control" || stemInteractionType === "generate") {
+      state.overall.score -= 1;
     }
   }
 
