@@ -126,6 +126,74 @@ export const MONTH_ELEMENT_STATE: Record<string, Record<string, string>> = {
   "丑": { "金": "相", "木": "死", "水": "休", "火": "囚", "土": "旺" }
 };
 
+export const TEN_GOD_CONCRETE: Record<string, {
+  career: string;
+  personality: string;
+  relationship: string;
+  wealth: string;
+}> = {
+  "食神": {
+    career: "表达能力、作品产出、歌唱/演艺才华、创作力",
+    personality: "温和输出型——享受过程、有品味、厚道",
+    relationship: "女命代表女儿；对伴侣温和但可能沉浸在自己世界",
+    wealth: "食神生财=才华变现的通道"
+  },
+  "伤官": {
+    career: "锐利表达、创新突破、演艺才华（比食神更激烈）",
+    personality: "清高骄傲、追求极致、不服管、有叛逆心",
+    relationship: "女命代表儿子；说话容易冒犯伴侣",
+    wealth: "伤官生财=靠突破创新赚钱"
+  },
+  "正官": {
+    career: "名气、职位、规则秩序、体制内发展",
+    personality: "有责任感、讲规矩、在意身份和形象",
+    relationship: "女命代表丈夫（正缘）；男命代表约束",
+    wealth: "官生印=通过职位获取资源"
+  },
+  "七杀": {
+    career: "名气（比正官更强）、压力、竞争、贵人",
+    personality: "不服输、抗压强、在压力下反而出色",
+    relationship: "女命代表情人/强势男性；关系中有压迫感",
+    wealth: "杀为权=以势取财"
+  },
+  "正财": {
+    career: "稳定收入、务实经营、踏实积累",
+    personality: "务实、节俭、重视安全感",
+    relationship: "男命代表妻子（正缘）",
+    wealth: "正财=稳定的、可持续的收入来源"
+  },
+  "偏财": {
+    career: "灵活运作、投资、经营、多渠道收入",
+    personality: "大方、灵活、有经营头脑、社交广",
+    relationship: "男命代表情人/异性缘；偏财=桃花",
+    wealth: "偏财=意外之财、投资回报、灵活收入"
+  },
+  "正印": {
+    career: "学习能力、证照、学历、平台支持",
+    personality: "善良、有人缘、善于吸收、母性关怀",
+    relationship: "代表母亲；配偶中寻找理解和支持",
+    wealth: "印不直接生财，但印旺=平台好→间接生财"
+  },
+  "偏印": {
+    career: "偏门灵感、非主流思路、独特技能",
+    personality: "想法多、不走寻常路、有艺术感、但多虑",
+    relationship: "与母亲关系复杂；偏印夺食=对子女不利",
+    wealth: "偏印=通过独特技能或偏门渠道获利"
+  },
+  "比肩": {
+    career: "竞争、独立、同行并进",
+    personality: "独立意识强、不喜欢被安排、社交重质",
+    relationship: "同性竞争；合伙中容易争主导权",
+    wealth: "比肩=分财，合伙需谨慎"
+  },
+  "劫财": {
+    career: "强竞争、争资源、主动出击",
+    personality: "争强好胜、不服输、主动抢夺机会",
+    relationship: "感情中有第三者风险；劫财=夺妻/夺财",
+    wealth: "劫财=破财之象，逢劫财年控制支出"
+  }
+};
+
 const ELEMENT_GENERATES: Record<Element, Element> = {
   木: "火",
   火: "土",

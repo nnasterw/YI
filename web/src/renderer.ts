@@ -1,5 +1,5 @@
 import { analyzeDayBranch, analyzeElementFlow, analyzeLuckCycleLayers, detectCombinations } from "@core/combinations";
-import { HIDDEN_STEM_WEIGHTS, MONTH_ELEMENT_STATE, STEM_META, computeTenGod, getElementInteraction } from "@core/constants";
+import { HIDDEN_STEM_WEIGHTS, MONTH_ELEMENT_STATE, STEM_META, TEN_GOD_CONCRETE, computeTenGod, getElementInteraction } from "@core/constants";
 import type { DayBranchAnalysis, ElementFlowChain, TenGodCombination } from "@core/combinations";
 import type { BaziProfile, Element, FlowAnalysis, LuckCycle, PillarDetails } from "@core/types";
 
@@ -271,18 +271,36 @@ function renderTenGods(profile: BaziProfile): string {
     .sort((a, b) => b[1] - a[1])
     .map(([god, count]) => {
       const isDom = dist.dominant.includes(god);
-      return `<tr class="${isDom ? 'dominant' : ''}"><td>${god}</td><td>${count}</td></tr>`;
+      const info = TEN_GOD_CONCRETE[god];
+      const tooltip = info ? `${info.career}` : "";
+      return `<tr class="${isDom ? 'dominant' : ''}"><td>${god}</td><td>${count}</td><td class="tengod-desc">${tooltip}</td></tr>`;
     }).join("");
+
+  const dominantDetails = dist.dominant.map(god => {
+    const info = TEN_GOD_CONCRETE[god];
+    if (!info) return "";
+    return `
+      <div class="tengod-detail">
+        <h4>${god}（主轴）</h4>
+        <ul>
+          <li><strong>事业</strong>：${info.career}</li>
+          <li><strong>性格</strong>：${info.personality}</li>
+          <li><strong>感情</strong>：${info.relationship}</li>
+          <li><strong>财富</strong>：${info.wealth}</li>
+        </ul>
+      </div>`;
+  }).join("");
 
   return `
     <div class="card">
       <h2>十神分布</h2>
       <table class="ten-god-table">
-        <tr><th>十神</th><th>次数</th></tr>
+        <tr><th>十神</th><th>次数</th><th>具象含义</th></tr>
         ${rows}
       </table>
       <p>主轴：<strong>${dist.dominant.join("、")}</strong></p>
       <p>${dist.observations.join(" ")}</p>
+      ${dominantDetails}
     </div>`;
 }
 

@@ -7,6 +7,7 @@ export {
   HIDDEN_STEM_WEIGHTS,
   MONTH_ELEMENT_STATE,
   STEM_META,
+  TEN_GOD_CONCRETE,
   computeTenGod,
   getElementInteraction
 } from "./constants";
