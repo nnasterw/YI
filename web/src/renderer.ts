@@ -340,20 +340,24 @@ function renderNarrativeAnalysis(profile: BaziProfile): string {
   return `<div class="card"><h2>命盘分析</h2>${sections}</div>`;
 }
 
-function renderLuckCyclesOverview(profile: BaziProfile): string {
+function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
   const lc = profile.luckCycles;
-  const rows = lc.cycles.map(c => `
+  const monthBranch = profile.chart.pillars[1].branch.value;
+  const rows = lc.cycles.map(c => {
+    const corrected = computeCorrectedTone(c.ganZhi, dayElement, isStrong, monthBranch, c.analysis);
+    return `
     <tr>
       <td>${c.index}</td>
       <td class="ganzhi">${c.ganZhi}</td>
       <td>${c.startAge}-${c.endAge}</td>
       <td>${c.startYear}-${c.endYear}</td>
-      <td>${toneLabel(c.analysis.overall.tone)}</td>
+      <td>${toneLabel(corrected.tone)}</td>
       <td>${toneLabel(c.analysis.career.tone)}</td>
       <td>${toneLabel(c.analysis.relationships.tone)}</td>
       <td>${toneLabel(c.analysis.health.tone)}</td>
       <td>${toneLabel(c.analysis.wealth.tone)}</td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 
   return `
     <div class="card">
@@ -936,7 +940,7 @@ export function renderReport(profile: BaziProfile): string {
     renderRelations(profile),
     renderNarrativeAnalysis(profile),
     renderLuckCycleLayered(profile, scores.isStrong),
-    renderLuckCyclesOverview(profile),
+    renderLuckCyclesOverview(profile, dayElement, scores.isStrong),
     renderLuckCycleDetails(profile, dayElement, scores.isStrong),
     renderLifetimeLookup(dayElement, favorable)
   ].join("");
