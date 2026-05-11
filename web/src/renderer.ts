@@ -918,6 +918,190 @@ function renderLuckCycleLayered(profile: BaziProfile, isStrong: boolean): string
     </div>`;
 }
 
+function renderPortrait(profile: BaziProfile, scores: ElementScores, combos: TenGodCombination[]): string {
+  const dm = profile.chart.dayMaster;
+  const diShi = profile.chart.pillars[2].diShi;
+  const dayMasterNames: Record<string, string> = {
+    "甲": "参天大树", "乙": "花草藤蔓", "丙": "太阳烈火", "丁": "灯烛星光",
+    "戊": "高山大地", "己": "田园沃土", "庚": "刀剑钢铁", "辛": "珠宝首饰",
+    "壬": "江河大海", "癸": "雨露溪流"
+  };
+  const symbol = dayMasterNames[dm.value] || "";
+  const comboNames = combos.map(c => c.type).join("、");
+  const clashes = profile.relations.filter(r => ["六冲","六害","相刑"].includes(r.type));
+
+  const portrait = scores.isStrong
+    ? `${dm.value}${dm.element}身旺——${symbol}之象。内在能量充沛，自信到固执的程度。坐${diShi}位，根基极稳。`
+    : `${dm.value}${dm.element}身弱——${symbol}之象。柔韧善借力，需要外部支持才能发挥最大价值。`;
+
+  const dynamicDesc = clashes.length >= 2
+    ? "命盘动态极强——冲合交织，一生闲不住，变动多、经历多。"
+    : clashes.length === 1
+    ? "命盘有动态因子，适度变化中成长。"
+    : "命盘相对安定，偏向稳扎稳打。";
+
+  return `
+    <div class="card portrait-card">
+      <h2>人物画像</h2>
+      <div class="portrait-main">
+        <div class="portrait-symbol">${dm.value}</div>
+        <div class="portrait-text">
+          <p class="portrait-line">${portrait}</p>
+          <p class="portrait-line">${dynamicDesc}</p>
+          ${comboNames ? `<p class="portrait-combo">核心组合：${comboNames}</p>` : ""}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderKeyYears(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
+  const monthBranch = profile.chart.pillars[1].branch.value;
+  const allAnnuals: Array<{year:number; age:number; ganZhi:string; analysis:FlowAnalysis; cycleGz:string}> = [];
+
+  for (const cycle of profile.luckCycles.cycles) {
+    for (const a of cycle.annuals) {
+      allAnnuals.push({...a, cycleGz: cycle.ganZhi});
+    }
+  }
+
+  const scored = allAnnuals.map(a => {
+    const c = computeCorrectedTone(a.ganZhi, dayElement, isStrong, monthBranch, a.analysis);
+    return { ...a, score: c.score, tone: c.tone, breakdown: c.breakdown };
+  });
+
+  const extreme = scored.filter(a => Math.abs(a.score) >= 1.2).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 12);
+
+  if (extreme.length === 0) return "";
+
+  const rows = extreme.map(a => {
+    const icon = a.score >= 1.2 ? "🟢" : a.score <= -1.2 ? "🔴" : "🟡";
+    const [stem] = [...a.ganZhi];
+    const tenGod = computeTenGod(profile.chart.dayMaster.value, stem);
+    return `
+      <div class="key-year ${a.score > 0 ? 'key-positive' : 'key-negative'}">
+        <div class="key-year-header">
+          <span class="key-icon">${icon}</span>
+          <span class="key-info"><strong>${a.year}年</strong>（${a.age}岁）${a.ganZhi} · ${tenGod}</span>
+          <span class="key-score">${a.score >= 0 ? '+' : ''}${a.score.toFixed(1)}</span>
+        </div>
+        <div class="key-year-detail">
+          <p>${a.analysis.overall.summary[0] || ''}</p>
+          <p class="score-formula">${a.breakdown}</p>
+        </div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="card">
+      <h2>关键年份（需要特别注意）</h2>
+      <p class="hint">不分好坏——无论得分正负，这些年份都需要你主动做出应对。好年是兑现窗口，差年是成长催化剂。</p>
+      ${rows}
+    </div>`;
+}
+
+function renderLifeRhythm(profile: BaziProfile, isStrong: boolean): string {
+  const cycles = profile.luckCycles.cycles;
+  const monthBranch = profile.chart.pillars[1].branch.value;
+  const dayElement = profile.chart.dayMaster.element;
+
+  const rows = cycles.map(c => {
+    const corrected = computeCorrectedTone(c.ganZhi, dayElement, isStrong, monthBranch, c.analysis);
+    const layers = analyzeLuckCycleLayers(c.ganZhi, profile.chart.dayMaster, isStrong);
+    const barClass = corrected.tone === "supportive" ? "rhythm-good" : corrected.tone === "challenging" ? "rhythm-bad" : "rhythm-mid";
+    return `
+      <div class="rhythm-row">
+        <div class="rhythm-age">${c.startAge}-${c.endAge}岁</div>
+        <div class="rhythm-bar-wrap">
+          <div class="rhythm-bar ${barClass}"></div>
+        </div>
+        <div class="rhythm-gz ganzhi">${c.ganZhi}</div>
+        <div class="rhythm-desc">${layers.stemTenGod}(${layers.stemIsPositive ? '喜' : '忌'}) · ${c.analysis.overall.summary[0]?.substring(0, 25) || ''}</div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="card">
+      <h2>终生节奏</h2>
+      <p class="hint">绿=用神透出期（顺），红=忌神透出期（逆），灰=中性。</p>
+      <div class="rhythm-chart">${rows}</div>
+    </div>`;
+}
+
+function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
+  const dm = profile.chart.dayMaster;
+  const dayBranchAnalysis = analyzeDayBranch(profile);
+  const gender = profile.input.gender;
+
+  const targetTenGods = gender === "male" ? ["正财", "偏财"] : ["正官", "七杀"];
+  const windows: string[] = [];
+
+  for (const cycle of profile.luckCycles.cycles) {
+    for (const a of cycle.annuals) {
+      const [stem] = [...a.ganZhi];
+      const tenGod = computeTenGod(dm.value, stem);
+      if (targetTenGods.includes(tenGod)) {
+        windows.push(`${a.year}年(${a.age}岁) ${a.ganZhi} — ${tenGod}透出`);
+      }
+    }
+  }
+
+  return `
+    <div class="card">
+      <h2>感情专项</h2>
+      <div class="personality-detail">
+        <h4>配偶宫</h4>
+        <p>${dayBranchAnalysis.spousePalace}</p>
+        <p>${dayBranchAnalysis.clashRisk}</p>
+      </div>
+      <div class="personality-detail">
+        <h4>感情活跃窗口（${gender === "male" ? "财星" : "官星"}透出年）</h4>
+        <ul>${windows.slice(0, 8).map(w => `<li>${w}</li>`).join("")}</ul>
+      </div>
+    </div>`;
+}
+
+function renderCareerPath(profile: BaziProfile, scores: ElementScores, favorable: FavorableElements): string {
+  const dm = profile.chart.dayMaster;
+  const dist = profile.tenGodDistribution;
+  const shiShang = (dist.counts["食神"] ?? 0) + (dist.counts["伤官"] ?? 0);
+  const guanSha = (dist.counts["正官"] ?? 0) + (dist.counts["七杀"] ?? 0);
+  const caiXing = (dist.counts["正财"] ?? 0) + (dist.counts["偏财"] ?? 0);
+
+  const directions: Array<{name: string; stars: number; reason: string}> = [];
+  if (shiShang >= 2) directions.push({name: "创作/技术/表达", stars: 5, reason: "食伤泄秀=核心通道"});
+  if (caiXing >= 2) directions.push({name: "经营/投资/商贸", stars: 4, reason: "财星活跃"});
+  if (guanSha >= 2) directions.push({name: "管理/体制/法律", stars: 3, reason: "官杀制身"});
+  if (directions.length === 0) directions.push({name: "综合发展", stars: 3, reason: "十神均衡"});
+
+  const dirRows = directions.map(d => `<li><strong>${d.name}</strong> ${'⭐'.repeat(d.stars)} <span class="hint">${d.reason}</span></li>`).join("");
+
+  const explosionYears: string[] = [];
+  for (const cycle of profile.luckCycles.cycles) {
+    for (const a of cycle.annuals) {
+      const [stem] = [...a.ganZhi];
+      const tenGod = computeTenGod(dm.value, stem);
+      if (["食神", "伤官"].includes(tenGod) && scores.isStrong) {
+        explosionYears.push(`${a.year}(${a.age}岁) ${a.ganZhi}`);
+      }
+    }
+  }
+
+  return `
+    <div class="card">
+      <h2>事业路径</h2>
+      <div class="personality-detail">
+        <h4>适合方向</h4>
+        <ul>${dirRows}</ul>
+      </div>
+      ${explosionYears.length > 0 ? `
+      <div class="personality-detail">
+        <h4>事业爆发窗口（食伤透出年）</h4>
+        <p class="hint">身旺命局，食伤透出=用神到位=出成绩的最佳时机</p>
+        <ul>${explosionYears.slice(0, 10).map(y => `<li>${y}</li>`).join("")}</ul>
+      </div>` : ""}
+    </div>`;
+}
+
 export function renderReport(profile: BaziProfile): string {
   const scores = computeElementScores(profile);
   const dayElement = profile.chart.dayMaster.element;
@@ -927,21 +1111,35 @@ export function renderReport(profile: BaziProfile): string {
   const flowChains = analyzeElementFlow(profile, scores.isStrong);
 
   return [
+    // === 第一区：画像与性格（叙事优先）===
+    renderPortrait(profile, scores, combos),
+    renderPersonality(profile, scores, favorable),
+    renderCombinations(combos),
+
+    // === 第二区：命盘结构 ===
     renderBasicInfo(profile),
     renderPillars(profile),
     renderElementScores(scores, dayElement),
     renderStrengthJudgment(profile, scores),
     renderFavorable(dayElement, favorable, scores.isStrong),
-    renderCombinations(combos),
-    renderElementFlow(flowChains),
+
+    // === 第三区：人生主题 ===
+    renderRelationshipWindow(profile, dayElement, scores.isStrong),
+    renderCareerPath(profile, scores, favorable),
     renderDayBranch(dayBranch),
-    renderPersonality(profile, scores, favorable),
-    renderTenGods(profile),
-    renderRelations(profile),
-    renderNarrativeAnalysis(profile),
+    renderElementFlow(flowChains),
+
+    // === 第四区：运势时间线 ===
+    renderLifeRhythm(profile, scores.isStrong),
+    renderKeyYears(profile, dayElement, scores.isStrong),
     renderLuckCycleLayered(profile, scores.isStrong),
     renderLuckCyclesOverview(profile, dayElement, scores.isStrong),
     renderLuckCycleDetails(profile, dayElement, scores.isStrong),
+
+    // === 第五区：速查 ===
+    renderTenGods(profile),
+    renderRelations(profile),
+    renderNarrativeAnalysis(profile),
     renderLifetimeLookup(dayElement, favorable)
   ].join("");
 }

@@ -995,6 +995,162 @@ th {
   font-size: 0.8rem;
 }
 
+/* Portrait */
+.portrait-card {
+  border-left: 4px solid var(--accent);
+}
+
+.portrait-main {
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+}
+
+.portrait-symbol {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--accent);
+  min-width: 60px;
+  text-align: center;
+  line-height: 1;
+}
+
+.portrait-text {
+  flex: 1;
+}
+
+.portrait-line {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.portrait-combo {
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-top: 0.5rem;
+}
+
+/* Key Years */
+.key-year {
+  margin-bottom: 0.6rem;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.key-year.key-positive {
+  border-left: 3px solid var(--wood);
+}
+
+.key-year.key-negative {
+  border-left: 3px solid var(--fire);
+}
+
+.key-year-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.key-icon {
+  font-size: 1rem;
+}
+
+.key-info {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.key-score {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.key-year-detail {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.key-year-detail .score-formula {
+  font-family: monospace;
+  font-size: 0.7rem;
+  margin-top: 0.3rem;
+  opacity: 0.7;
+}
+
+/* Life Rhythm */
+.rhythm-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rhythm-row {
+  display: grid;
+  grid-template-columns: 70px 60px 40px 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.rhythm-bar-wrap {
+  height: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.rhythm-bar {
+  height: 100%;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.rhythm-bar.rhythm-good {
+  background: var(--wood);
+}
+
+.rhythm-bar.rhythm-bad {
+  background: var(--fire);
+}
+
+.rhythm-bar.rhythm-mid {
+  background: var(--text-dim);
+  opacity: 0.4;
+}
+
+.rhythm-age {
+  color: var(--text-dim);
+}
+
+.rhythm-gz {
+  font-weight: bold;
+}
+
+.rhythm-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .rhythm-row {
+    grid-template-columns: 55px 50px 35px 1fr;
+    font-size: 0.7rem;
+  }
+  .portrait-main {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
+
 /* Error */
 .error {
   background: rgba(244, 67, 54, 0.2);
