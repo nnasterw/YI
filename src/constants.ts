@@ -227,6 +227,14 @@ export function findBranchPairRelation(
   branchA: string,
   branchB: string
 ): { type: string; result?: string } | undefined {
+  // 同一支不构成六合/六冲/六害等对宫关系
+  if (branchA === branchB) {
+    // 仅检查自刑
+    if (SELF_PUNISHMENTS.has(branchA)) {
+      return { type: "自刑" };
+    }
+    return undefined;
+  }
   for (const relation of BRANCH_PAIR_RELATIONS) {
     if ((relation.members as readonly string[]).includes(branchA) && (relation.members as readonly string[]).includes(branchB)) {
       return {
@@ -240,10 +248,6 @@ export function findBranchPairRelation(
     if ((relation.members as readonly string[]).includes(branchA) && (relation.members as readonly string[]).includes(branchB)) {
       return { type: relation.type };
     }
-  }
-
-  if (branchA === branchB && SELF_PUNISHMENTS.has(branchA)) {
-    return { type: "自刑" };
   }
 
   return undefined;

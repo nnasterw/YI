@@ -781,7 +781,11 @@ export function buildFlowAnalysis(args: {
     );
   }
 
+  // 对原局地支去重，避免原局有重复地支时生成重复信号
+  const seenNatalBranches = new Set<string>();
   for (const natalBranch of natalBranches) {
+    if (seenNatalBranches.has(natalBranch)) continue;
+    seenNatalBranches.add(natalBranch);
     const relation = findBranchPairRelation(flowBranch, natalBranch);
     if (!relation) {
       continue;
