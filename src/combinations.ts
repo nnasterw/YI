@@ -250,11 +250,15 @@ export function analyzeDayBranch(profile: BaziProfile): DayBranchAnalysis {
   if (isYangRen) {
     clashRisk += "日坐阳刃——对配偶缺乏耐心，感情中容易急躁和强势。";
   }
+  // 日支可能同时命中多种冲刑害关系（如既相刑又六害），此时归为同一条结论，
+  // 只列出关系类型、不重复措辞，避免出现多句结论完全相同的句子。
   if (clashes.length > 0) {
-    clashRisk += clashes.map(r => `日支逢${r.type}——配偶宫不安定，感情容易有波动。`).join("");
+    const clashTypes = [...new Set(clashes.map(r => r.type))].join("、");
+    clashRisk += `日支逢${clashTypes}——配偶宫不安定，感情容易有波动。`;
   }
   if (combines.length > 0) {
-    clashRisk += combines.map(r => `日支逢${r.type}——感情容易被外部缘分触发和牵动。`).join("");
+    const combineTypes = [...new Set(combines.map(r => r.type))].join("、");
+    clashRisk += `日支逢${combineTypes}——感情容易被外部缘分触发和牵动。`;
   }
   if (!clashRisk) {
     clashRisk = "日支无明显冲合，配偶宫相对安定。";

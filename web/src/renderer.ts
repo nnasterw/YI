@@ -890,6 +890,12 @@ function renderKeyYears(profile: BaziProfile, dayElement: Element, isStrong: boo
     const icon = a.score >= 1.2 ? "🟢" : a.score <= -1.2 ? "🔴" : "🟡";
     const [stem] = [...a.ganZhi];
     const tenGod = computeTenGod(profile.chart.dayMaster.value, stem);
+    // 附带该年整体维度的解读，避免只有打分公式、缺少可读结论。只取 summary[0]
+    // （天干十神那条）会因为十天干在长周期内反复出现，导致多个关键年份的 highlight
+    // 高度雷同；按原始顺序去重拼接（天干喜忌在前、地支冲合刑害在后）才能既体现
+    // "这一年区别于其他同天干年份"的具体触发点，又保持"先讲喜忌方向、再讲具体
+    // 触发"的自然语序（不用 pickReportLines，因为它按长度重排会打乱先因后果的顺序）。
+    const highlight = Array.from(new Set(a.analysis.overall.summary.map(s => s.trim()).filter(Boolean))).join("");
     return `
       <div class="key-year ${a.score > 0 ? 'key-positive' : 'key-negative'}">
         <div class="key-year-header">
@@ -897,6 +903,7 @@ function renderKeyYears(profile: BaziProfile, dayElement: Element, isStrong: boo
           <span class="key-info"><strong>${a.year}年</strong>（${a.age}岁）${a.ganZhi} · ${tenGod}</span>
           <span class="key-score">${a.score >= 0 ? '+' : ''}${a.score.toFixed(1)}</span>
         </div>
+        ${highlight ? `<p class="key-year-highlight">${highlight}</p>` : ""}
         <div class="key-year-detail">
           <p class="score-formula">${a.breakdown}</p>
         </div>
@@ -941,12 +948,20 @@ function renderLifeRhythm(profile: BaziProfile, isStrong: boolean): string {
 
 function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
   const dm = profile.chart.dayMaster;
-  const dayBranchAnalysis = analyzeDayBranch(profile);
   const gender = profile.input.gender;
-  const relationshipSummary = (() => {
-    const s = summarizeDimension(profile.analysis.relationships);
-    return s && s !== "无明显触发信号" ? s : dayBranchAnalysis.spousePalace;
-  })();
+  // "核心结论"卡片的感情栏已经展示 pickReportLines(relationships, 1) 的第一条，
+  // 此处若再重复展示同一条（或 fallback 到与下方「日支深度分析·配偶宫解读」相同的
+  // dayBranchAnalysis.spousePalace）都只是逐字重复、毫无信息增量。因此这里只取剩余的
+  // （桃花神煞、天乙贵人等）补充条目；如果没有更多条目，就不渲染这个小节，
+  // 避免为了填充而堆出一句在别处已经出现过的话。
+  const relationshipExtras = pickReportLines(profile.analysis.relationships, 3).slice(1);
+  const relationshipExtraHtml = relationshipExtras.length > 0
+    ? `
+      <div class="personality-detail">
+        <h4>补充信息</h4>
+        <p>${relationshipExtras.join("")}</p>
+      </div>`
+    : "";
 
   const targetTenGods = gender === "male" ? ["正财", "偏财"] : ["正官", "七杀"];
   const windows: string[] = [];
@@ -964,10 +979,7 @@ function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isS
   return `
     <div class="card">
       <h2>感情专项</h2>
-      <div class="personality-detail">
-        <h4>关系主线</h4>
-        <p>${relationshipSummary}</p>
-      </div>
+      ${relationshipExtraHtml}
       <div class="personality-detail">
         <h4>感情活跃窗口（${gender === "male" ? "财星" : "官星"}透出年）</h4>
         <ul>${windows.slice(0, 8).map(w => `<li>${w}</li>`).join("")}</ul>

@@ -1069,6 +1069,13 @@ th {
   color: var(--accent);
 }
 
+.key-year-highlight {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0 0 0.4rem;
+}
+
 .key-year-detail {
   font-size: 0.8rem;
   color: var(--text-dim);
