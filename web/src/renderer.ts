@@ -252,7 +252,7 @@ function renderStrengthJudgment(profile: BaziProfile, scores: ElementScores): st
         三诀 ${checks.filter(c => c.result).length}/3 通过，扶抵力占比 ${Math.round(s.supportRatio * 100)}% →
         <strong class="${scores.isStrong ? 'strong' : 'weak'}">${s.level}</strong>
       </p>
-      <p class="hint">${s.reasons.join("")}</p>
+      <p class="hint">${s.reasons.slice(1).join("")}</p>
     </div>`;
 }
 
