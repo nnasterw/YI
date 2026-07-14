@@ -32,17 +32,6 @@ const DIMENSION_FALLBACK = {
   wealth: "财富维度建议结合财星来源、比劫分财和大运触发一起判断。"
 } as const;
 
-function getFlowFallback(dimension: FlowDimensionKey, ganZhi: string, levelLabel: string): string {
-  const fallbacks: Record<FlowDimensionKey, string> = {
-    overall: `${levelLabel}${ganZhi}流运信号较为均衡，宜视为趋势提示而非单点结论。`,
-    career: `${levelLabel}${ganZhi}事业维度以阶段性变化为主，建议结合现实项目与职位节点观察。`,
-    relationships: `${levelLabel}${ganZhi}关系维度暂无单一强信号，更适合结合沟通节奏和现实互动判断。`,
-    health: `${levelLabel}${ganZhi}健康维度暂无强烈单点信号，适合重点观察作息、压力与体感变化。`,
-    wealth: `${levelLabel}${ganZhi}财富维度暂无单一强信号，建议重点看现金流、合作分配与支出结构。`
-  };
-  return fallbacks[dimension];
-}
-
 const FLOW_DIMENSIONS = ["overall", "career", "relationships", "health", "wealth"] as const;
 type FlowDimensionKey = (typeof FLOW_DIMENSIONS)[number];
 type FlowScoreState = Record<FlowDimensionKey, { score: number; messages: string[] }>;
