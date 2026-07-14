@@ -44,14 +44,29 @@ export function analyzeNatalRelations(pillars: PillarDetails[]): RelationRecord[
     }
   }
 
+  // 命盘中某地支重复出现时（如两柱皆为“午”），会与同一个第三方地支各自构成
+  // 完全相同的六合/六冲/六害关系（文案也相同），此处按“关系类型+地支组合”去重，
+  // 避免报告中出现两条一模一样的关系描述。
+  const seenPairKeys = new Set<string>();
   for (let i = 0; i < branches.length; i += 1) {
     for (let j = i + 1; j < branches.length; j += 1) {
-      const match = findBranchPairRelation(branches[i], branches[j]);
-      if (match) {
-        relations.push(
-          buildEarthlyRelation(match.type, [branches[i], branches[j]], match.result)
-        );
+      // 原局内相同地支重复出现（如两柱皆为“酉”）不在此处判定，
+      // 自刑关系统一交由下方 branchCounts 逻辑处理，避免重复生成同一条自刑记录。
+      if (branches[i] === branches[j]) {
+        continue;
       }
+      const match = findBranchPairRelation(branches[i], branches[j]);
+      if (!match) {
+        continue;
+      }
+      const pairKey = `${match.type}:${[branches[i], branches[j]].sort().join(",")}`;
+      if (seenPairKeys.has(pairKey)) {
+        continue;
+      }
+      seenPairKeys.add(pairKey);
+      relations.push(
+        buildEarthlyRelation(match.type, [branches[i], branches[j]], match.result)
+      );
     }
   }
 

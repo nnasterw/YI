@@ -93,13 +93,14 @@ function pushSignal(
   signals: FlowSignal[],
   seen: Set<string>,
   signal: FlowSignal
-): void {
+): boolean {
   const key = buildSignalKey(signal);
   if (seen.has(key)) {
-    return;
+    return false;
   }
   seen.add(key);
   signals.push(signal);
+  return true;
 }
 
 function getElementTotals(balance: ElementBalance): Record<Element, number> {
@@ -397,7 +398,12 @@ export function buildFlowAnalysis(args: {
     signal: FlowSignal,
     impacts: Array<{ dimension: FlowDimensionKey; delta: number; message: string }>
   ): void => {
-    pushSignal(signals, seen, signal);
+    // 若同一 signal（同类别+同关系+同成员）已注册过，说明调用方遇到了重复触发场景
+    // （如原局重复地支未在外层去重），此时不应再重复叠加分数或文案，直接跳过。
+    const isNew = pushSignal(signals, seen, signal);
+    if (!isNew) {
+      return;
+    }
     for (const impact of impacts) {
       addMessage(state, impact.dimension, impact.delta, impact.message);
     }
