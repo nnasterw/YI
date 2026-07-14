@@ -11,23 +11,35 @@ export {
   computeTenGod,
   getElementInteraction
 } from "./constants";
+export { determinePattern } from "./pattern";
 export { analyzeNatalRelations } from "./relations";
-export { computeStrength } from "./scoring";
+export { assessStrength, computeStrength } from "./scoring";
 export type { ElementScores } from "./scoring";
+export { calculateShenSha, calculateXunKong } from "./shensha";
+export { assessYongShen } from "./yongshen";
 export type {
   AnalysisTone,
   AnnualCycle,
   BaziAnalysis,
   BaziInput,
   BaziProfile,
+  ElementBalance,
   FlowAnalysis,
   FlowDimensionAnalysis,
   FlowSignal,
-  ElementBalance,
   LuckCycle,
   LuckCycles,
   NormalizedBaziInput,
+  PatternAssessment,
+  PatternCategory,
   PillarDetails,
   RelationRecord,
-  TenGodDistribution
+  ShenShaRecord,
+  StrengthAssessment,
+  StrengthLevel,
+  TenGodDistribution,
+  XunKongAssessment,
+  YongShenAssessment,
+  YongShenMethodName,
+  YongShenMethodResult
 } from "./types";

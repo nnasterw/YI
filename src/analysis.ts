@@ -1,4 +1,5 @@
 import {
+  BRANCH_HALF_TRIPLE_RELATIONS,
   BRANCH_META,
   BRANCH_TRIPLE_RELATIONS,
   STEM_META,
@@ -6,6 +7,7 @@ import {
   findBranchPairRelation,
   getElementInteraction
 } from "./constants";
+import { CONTROLLING } from "./scoring";
 import type {
   AnalysisTone,
   BaziAnalysis,
@@ -14,9 +16,13 @@ import type {
   FlowAnalysis,
   FlowSignal,
   Gender,
+  PatternAssessment,
   PillarDetails,
   RelationRecord,
-  TenGodDistribution
+  ShenShaRecord,
+  StrengthAssessment,
+  TenGodDistribution,
+  YongShenAssessment
 } from "./types";
 
 const DIMENSION_FALLBACK = {
@@ -132,6 +138,33 @@ function getFlowTripleRelations(flowBranch: string, natalBranches: string[]): Ar
     }));
 }
 
+// 流年地支引动原局地支形成“半合”：三合局中含子/午/卯/酉中神的两支组合即可成立，力量弱于完整三合。
+// 若流年与原局已能凑齐完整三合/三会，则不重复标记其子集半合，避免信号冗余。
+function getFlowHalfTripleRelations(flowBranch: string, natalBranches: string[]): Array<{
+  type: string;
+  members: string[];
+  result: string;
+}> {
+  const allBranches = [...new Set([...natalBranches, flowBranch])];
+  const fullTripleGroups = BRANCH_TRIPLE_RELATIONS.filter((relation) =>
+    relation.members.every((member) => allBranches.includes(member))
+  );
+  const isCoveredByFullTriple = (members: readonly string[]) =>
+    fullTripleGroups.some((full) => members.every((member) => (full.members as readonly string[]).includes(member)));
+
+  return BRANCH_HALF_TRIPLE_RELATIONS
+    .filter((relation) =>
+      (relation.members as readonly string[]).includes(flowBranch) &&
+      relation.members.every((member) => allBranches.includes(member))
+    )
+    .filter((relation) => !isCoveredByFullTriple(relation.members))
+    .map((relation) => ({
+      type: relation.type,
+      members: [...relation.members],
+      result: relation.result
+    }));
+}
+
 export function buildElementBalance(pillars: PillarDetails[]): ElementBalance {
   const counts: ElementBalance["counts"] = {
     木: { visibleStems: 0, hiddenStems: 0, total: 0 },
@@ -211,14 +244,37 @@ export function buildNarrativeAnalysis(args: {
   startSolar: string;
   direction: "forward" | "backward";
   dayBranch: string;
+  strength: StrengthAssessment;
+  pattern: PatternAssessment;
+  yongShen: YongShenAssessment;
+  shenSha: ShenShaRecord[];
 }): BaziAnalysis {
-  const { dayMaster, elementBalance, tenGodDistribution, relations, startSolar, direction, dayBranch } =
-    args;
+  const {
+    dayMaster,
+    elementBalance,
+    tenGodDistribution,
+    relations,
+    startSolar,
+    direction,
+    dayBranch,
+    strength,
+    pattern,
+    yongShen,
+    shenSha
+  } = args;
 
   const overview: string[] = [];
-  overview.push(`日主为${dayMaster.value}${dayMaster.element}，属于${dayMaster.yinYang}性之主。`);
+  overview.push(`日主为${dayMaster.value}${dayMaster.element}，属于${dayMaster.yinYang}性之主，旺衰层级为${strength.level}。`);
   overview.push(...elementBalance.observations);
   overview.push(...tenGodDistribution.observations);
+  overview.push(
+    `格局定为${pattern.name}（${pattern.category}），以${pattern.governingTenGod}为纲，当前判断倾向${pattern.outcome}。`
+  );
+  overview.push(
+    `用神取用以${yongShen.primaryMethod}法为主，首选五行为${yongShen.yongShen.join("、")}，忌神方向为${
+      yongShen.jiShen.length > 0 ? yongShen.jiShen.join("、") : "不明显"
+    }。`
+  );
   overview.push(`大运按${direction === "forward" ? "顺行" : "逆行"}展开，起运公历时间为${startSolar}。`);
 
   const career: string[] = [];
@@ -246,6 +302,18 @@ export function buildNarrativeAnalysis(args: {
   if (outputScore >= 3) {
     career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
   }
+  career.push(
+    `就格局而言，本命定为${pattern.name}，${
+      pattern.outcome === "成格"
+        ? "结构相对清纯，事业发展更宜顺势强化该格局对应的优势领域。"
+        : pattern.outcome === "败格"
+          ? "存在破格信号，事业上更需要靠后天努力和大运补位来化解结构性短板。"
+          : "成败尚待大运流年进一步验证，暂以稳健积累为主。"
+    }`
+  );
+  if (yongShen.yongShen.includes(dayMaster.element) || peerScore >= 3) {
+    career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
+  }
   if (career.length === 0) {
     career.push(DIMENSION_FALLBACK.career);
   }
@@ -255,6 +323,15 @@ export function buildNarrativeAnalysis(args: {
   }
   if (peerScore >= 3) {
     wealth.push("比劫偏多，拿项目、做合伙、争资源的动力强，但也要防止分财与成本失控。");
+  }
+  const wealthElement = CONTROLLING[dayMaster.element];
+  if (yongShen.yongShen.length > 0) {
+    wealth.push(
+      `用神方向以${yongShen.yongShen.join("、")}为先，大运流年一旦引动此类五行，往往是财富节奏的重要触发点。`
+    );
+  }
+  if (yongShen.yongShen.includes(wealthElement)) {
+    wealth.push("财星恰与用神方向重合，理财与创收的天然敏感度更高，值得重点经营。");
   }
   if (wealth.length === 0) {
     wealth.push(DIMENSION_FALLBACK.wealth);
@@ -268,7 +345,7 @@ export function buildNarrativeAnalysis(args: {
     ["六冲", "六害", "相刑", "自刑"].includes(relation.type)
   );
   const supportiveRelation = dayBranchRelations.find((relation) =>
-    ["六合", "三合", "三会"].includes(relation.type)
+    ["六合", "三合", "三会", "半合"].includes(relation.type)
   );
 
   if (supportiveRelation) {
@@ -276,6 +353,14 @@ export function buildNarrativeAnalysis(args: {
   }
   if (tenseRelation) {
     relationships.push(`日支出现${tenseRelation.type}，情感关系里更要留意节奏拉扯、误解累积和边界冲撞。`);
+  }
+  const taoHua = shenSha.find((record) => record.name === "桃花");
+  if (taoHua) {
+    relationships.push(`命局带桃花神煞（见于${taoHua.hitPillars.join("、")}），异性缘或人际吸引力相对突出，也更需留意情感边界。`);
+  }
+  const tianYi = shenSha.find((record) => record.name === "天乙贵人");
+  if (tianYi) {
+    relationships.push(`命局带天乙贵人（见于${tianYi.hitPillars.join("、")}），人际关系中更容易遇到关键时刻拉一把的贵人。`);
   }
   if (relationships.length === 0) {
     relationships.push(DIMENSION_FALLBACK.relationships);
@@ -286,6 +371,15 @@ export function buildNarrativeAnalysis(args: {
   health.push(`健康观察上，先看${strongest}偏盛与${weakest}偏弱对应的寒热燥湿失衡。`);
   if (elementBalance.strongest.length === 1 && elementBalance.weakest.length === 1) {
     health.push("后续如果做更细报告，可以把体感与作息问题映射到对应五行系统继续展开。");
+  }
+  if (strength.level === "身极弱" || strength.level === "身弱") {
+    health.push("日主偏弱，整体抗压耐受度相对有限，作息规律和体力储备上更需要留有余量。");
+  } else if (strength.level === "身旺" || strength.level === "身强") {
+    health.push("日主偏旺，精力充沛的同时也容易情绪或气血过亢，宜适度疏泄、避免长期硬扛。");
+  }
+  const yangRen = shenSha.find((record) => record.name === "羊刃");
+  if (yangRen) {
+    health.push(`命局带羊刃（见于${yangRen.hitPillars.join("、")}），情绪波动或意外磕碰的风险需额外留意。`);
   }
 
   return {
@@ -328,113 +422,230 @@ export function buildFlowAnalysis(args: {
   const flowTenGod = computeTenGod(dayMaster.value, flowStem);
   switch (flowTenGod) {
     case "正官":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "supportive",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，强调规则、责任和职位秩序。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}官星显露，阶段节奏更偏向规范推进。` },
-          { dimension: "career", delta: 2, message: `${levelLabel}正官到位，事业上更利于职责明确、晋升考核或身份建立。` },
-          ...(gender === "female"
-            ? [
-                {
-                  dimension: "relationships" as const,
-                  delta: 1,
-                  message: `${levelLabel}官星对女命也常会带来关系议题的强化。`
-                }
-              ]
-            : [])
-        ]
-      );
+      // 官杀为克我之神：身弱者再逢克身，压力叠加为忌；身强者借此克泄耗方能中和，反为喜用。
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "supportive",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身强得官约束，规则与秩序反能定住方向。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 2, message: `${levelLabel}身强逢正官，克泄有度，阶段节奏更容易稳中有进。` },
+            { dimension: "career", delta: 2, message: `${levelLabel}正官到位，事业上更利于职责明确、晋升考核或身份建立。` },
+            ...(gender === "female"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: 1,
+                    message: `${levelLabel}官星对女命也常会带来关系议题的强化。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身弱再受官星克制，责任和约束容易变成负担。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢正官，克身之力叠加，节奏容易被外部要求压得偏紧。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}正官阶段责任加重，身弱时更需量力而行，避免硬扛。` },
+            ...(gender === "female"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: -1,
+                    message: `${levelLabel}身弱逢官星，关系中承受的压力感也会更明显。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      }
       break;
     case "七杀":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，带来压力、竞争和突进式要求。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}七杀发力，推进速度快，但伴随要求和压力。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}七杀更像高压任务期，适合硬仗，但不宜失控冒进。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}七杀偏重时，身心负荷和紧绷感要重点留意。` },
-          ...(gender === "female"
-            ? [
-                {
-                  dimension: "relationships" as const,
-                  delta: -1,
-                  message: `${levelLabel}七杀对关系也可能带来压迫感或强刺激。`
-                }
-              ]
-            : [])
-        ]
-      );
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "supportive",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身强得杀为用，压力转化为推进的动力。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}身强逢七杀，克泄之力恰能中和过旺之气，敢打硬仗。` },
+            { dimension: "career", delta: 2, message: `${levelLabel}七杀化为权柄，适合承担高压任务、竞争性强的项目。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}七杀偏重时，身心负荷和紧绷感仍需留意。` },
+            ...(gender === "female"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: 0,
+                    message: `${levelLabel}七杀对关系也可能带来压迫感或强刺激。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身弱再逢七杀克身，压力和风险都明显放大。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -2, message: `${levelLabel}身弱逢七杀，克身之力过重，容易身心俱疲、进退两难。` },
+            { dimension: "career", delta: -1, message: `${levelLabel}七杀高压叠加身弱，硬扛风险大，更需借外力或印星化解。` },
+            { dimension: "health", delta: -2, message: `${levelLabel}七杀偏重且日主本弱，身心负荷和紧绷感要重点留意。` },
+            ...(gender === "female"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: -1,
+                    message: `${levelLabel}七杀对关系也可能带来压迫感或强刺激。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      }
       break;
     case "正财":
     case "偏财":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "supportive",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，资源、交易与现实回报议题升温。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}财星浮现，更容易把注意力拉向资源和结果。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}财星阶段更利于项目落地、客户经营和资源整合。` },
-          { dimension: "wealth", delta: 2, message: `${levelLabel}${flowTenGod}到位，财富主题会更直接地被触发。` },
-          ...(gender === "male"
-            ? [
-                {
-                  dimension: "relationships" as const,
-                  delta: 1,
-                  message: `${levelLabel}财星对男命也常对应关系与伴侣主题的升温。`
-                }
-              ]
-            : [])
-        ]
-      );
+      // 财星为我克之神：身强能任财，财为喜用；身弱本已无力，财旺反而耗身夺气，为忌。
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "supportive",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身强能任财，资源、交易与现实回报议题升温。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}身强逢财，更容易把注意力拉向资源和结果并转化为收获。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}财星阶段更利于项目落地、客户经营和资源整合。` },
+            { dimension: "wealth", delta: 2, message: `${levelLabel}${flowTenGod}到位，身强任财，财富主题更容易落到实处。` },
+            ...(gender === "male"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: 1,
+                    message: `${levelLabel}财星对男命也常对应关系与伴侣主题的升温。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身弱难以任财，财旺反而耗身夺气。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢财，耗身之力增加，容易忙而无功、劳而少获。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}财星阶段机会虽在，但身弱时更易力不从心，宜量力而为。` },
+            { dimension: "wealth", delta: 0, message: `${levelLabel}${flowTenGod}虽浮现，但身弱难任财，进多出多、难有结余。` },
+            ...(gender === "male"
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: 0,
+                    message: `${levelLabel}财星对男命也常对应关系与伴侣主题的升温，身弱时更需量力经营。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      }
       break;
     case "食神":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "supportive",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，表达、输出、舒展和作品感增强。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}食神较旺，阶段氛围更利于展开和输出。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}食神阶段适合创作、传播、产品表达和方法输出。` },
-          { dimension: "health", delta: 1, message: `${levelLabel}食神也常对应状态舒展与恢复空间增大。` },
-          { dimension: "wealth", delta: 1, message: `${levelLabel}食神带动输出变现，适合把能力转成结果。` }
-        ]
-      );
+      // 食伤为我生之神，泄身之气：身强需要泄秀，食伤为喜；身弱本已无力，再泄则气更弱，为忌。
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "supportive",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身强得食神泄秀，表达、输出、舒展和作品感增强。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}身强食神泄秀，阶段氛围更利于展开和输出。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}食神阶段适合创作、传播、产品表达和方法输出。` },
+            { dimension: "health", delta: 1, message: `${levelLabel}食神也常对应状态舒展与恢复空间增大。` },
+            { dimension: "wealth", delta: 1, message: `${levelLabel}食神带动输出变现，适合把能力转成结果。` }
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身弱再被食神泄气，精力和续航更容易被拖垮。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢食神，泄气之力叠加，容易做得多却收效有限。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}食神阶段仍利表达输出，但身弱时更要控制节奏、避免透支。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}身弱食神泄身，体力和精力续航要格外留意。` },
+            { dimension: "wealth", delta: 0, message: `${levelLabel}食神虽利变现，但身弱泄气过重时收益常打折扣。` }
+          ]
+        );
+      }
       break;
     case "伤官":
-      registerSignal(
-        {
-          category: "ten-god",
-          type: flowTenGod,
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}为${flowTenGod}，突破、质疑、表达冲劲和规则摩擦并存。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}伤官当令，适合突破，但也容易和规则硬碰。` },
-          { dimension: "career", delta: 0, message: `${levelLabel}伤官更利创新表达，不利僵硬体系下的顺从推进。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}伤官阶段常伴随消耗、熬夜或情绪外放。` }
-        ]
-      );
+      // 伤官同属泄身之神，且冲击性更强：身强可借力突破，身弱则耗损与摩擦并重。
+      if (isStrong) {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "mixed",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身强借伤官泄秀突破，冲劲和表达欲同步增强。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}身强伤官当令，适合突破创新，泄秀有度反成动力。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}伤官更利创新表达，身强时敢于打破僵化体系、另辟蹊径。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}伤官阶段常伴随消耗、熬夜或情绪外放。` }
+          ]
+        );
+      } else {
+        registerSignal(
+          {
+            category: "ten-god",
+            type: flowTenGod,
+            tone: "challenging",
+            description: `${levelLabel}天干${flowStem}为${flowTenGod}，身弱再逢伤官泄身，消耗与摩擦风险同步升高。`,
+            members: [dayMaster.value, flowStem]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢伤官，泄气叠加冲劲外放，容易身心俱疲又招惹是非。` },
+            { dimension: "career", delta: -1, message: `${levelLabel}伤官不服管束，身弱时更难扛住规则摩擦带来的消耗。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
+            { dimension: "health", delta: -2, message: `${levelLabel}身弱伤官双重泄耗，熬夜、情绪外放对身心影响更明显。` }
+          ]
+        );
+      }
       break;
     case "正印":
     case "偏印":
@@ -732,6 +943,24 @@ export function buildFlowAnalysis(args: {
     );
   }
 
+  for (const half of getFlowHalfTripleRelations(flowBranch, natalBranches)) {
+    // 半合力量弱于完整三合，仅给整体与财富维度轻量加分，不放大到关系与事业维度。
+    registerSignal(
+      {
+        category: "branch-relation",
+        type: half.type,
+        tone: "supportive",
+        description: `${levelLabel}地支${flowBranch}与原局形成${half.type}（半合${half.result}局，力量弱于三合）。`,
+        members: half.members,
+        result: half.result
+      },
+      [
+        { dimension: "overall", delta: 1, message: `${levelLabel}${half.result}气半合初现，阶段主题有所呼应但尚未完全成局。` },
+        { dimension: "wealth", delta: 1, message: `${levelLabel}半合带来局部资源联动，机会零散但仍值得留意。` }
+      ]
+    );
+  }
+
   if (parentGanZhi) {
     const [, parentBranch] = [...parentGanZhi];
     const relation = findBranchPairRelation(flowBranch, parentBranch);
@@ -793,12 +1022,22 @@ export function buildFlowAnalysis(args: {
       state.overall.score += 1;
     } else if (stemInteractionType === "control") {
       state.overall.score += 1;
+    } else if (stemInteractionType === "controlled-by") {
+      state.overall.score += 1;
+      if (!state.overall.messages.some(m => m.includes("身旺喜克"))) {
+        state.overall.messages.push(`身旺喜克——${levelLabel}天干${flowStem}官杀克身，恰好制衡过旺日主，整体趋于平稳。`);
+      }
     }
   } else {
     if (stemInteractionType === "generated-by" || stemInteractionType === "same") {
       state.overall.score += 1;
     } else if (stemInteractionType === "control" || stemInteractionType === "generate") {
       state.overall.score -= 1;
+    } else if (stemInteractionType === "controlled-by") {
+      state.overall.score -= 2;
+      if (!state.overall.messages.some(m => m.includes("身弱忌官杀"))) {
+        state.overall.messages.push(`身弱忌官杀——${levelLabel}天干${flowStem}官杀克身，日主本已偏弱，此运/年压力感更明显。`);
+      }
     }
   }
 

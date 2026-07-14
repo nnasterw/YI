@@ -2,8 +2,11 @@ import { Lunar, Solar } from "lunar-javascript";
 import { buildElementBalance, buildFlowAnalysis, buildNarrativeAnalysis, buildTenGodDistribution } from "./analysis";
 import { BRANCH_META, STEM_META, computeTenGod } from "./constants";
 import { normalizeBaziInput, toGenderNumber } from "./input";
+import { determinePattern } from "./pattern";
 import { analyzeNatalRelations } from "./relations";
-import { computeStrength } from "./scoring";
+import { assessStrength, computeStrength } from "./scoring";
+import { calculateShenSha, calculateXunKong } from "./shensha";
+import { assessYongShen } from "./yongshen";
 import type {
   AnnualCycle,
   BaziInput,
@@ -265,7 +268,20 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
   const elementBalance = buildElementBalance(pillars);
   const tenGodDistribution = buildTenGodDistribution(pillars);
   const strength = computeStrength(pillars, dayMaster.element);
+  const strengthAssessment = assessStrength(pillars, dayMaster.element);
+  const pattern = determinePattern(pillars, strengthAssessment);
+  const yongShen = assessYongShen(pillars, dayMaster.element, strengthAssessment, pattern);
+  const shenSha = calculateShenSha(pillars);
+  const xunKong = calculateXunKong(pillars);
   const yun = eightChar.getYun(toGenderNumber(input.gender), input.luckSect);
+  // 大运流年评分的旺衰开关统一采用新版三维旺衰结论（得令/得地/得势细判），
+  // 不再使用旧版 computeStrength 的单一总分阈值，避免两套标准在边界案例上互相矛盾。
+  const isStrongForFlow =
+    strengthAssessment.level === "身旺" || strengthAssessment.level === "身强"
+      ? true
+      : strengthAssessment.level === "身弱" || strengthAssessment.level === "身极弱"
+        ? false
+        : strengthAssessment.supportRatio >= 0.5;
   const luckCycles = buildLuckCycles({
     yun,
     count: input.luckCycleCount,
@@ -273,7 +289,7 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     dayMaster,
     natalPillars: pillars,
     gender: input.gender,
-    isStrong: strength.isStrong
+    isStrong: isStrongForFlow
   });
   const analysis = buildNarrativeAnalysis({
     dayMaster,
@@ -282,7 +298,11 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     relations,
     startSolar: luckCycles.startSolar,
     direction: luckCycles.direction,
-    dayBranch: pillars.find((pillar) => pillar.key === "day")!.branch.value
+    dayBranch: pillars.find((pillar) => pillar.key === "day")!.branch.value,
+    strength: strengthAssessment,
+    pattern,
+    yongShen,
+    shenSha
   });
 
   return {
@@ -309,6 +329,11 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
       strongValue: strength.strongValue,
       weakValue: strength.weakValue
     },
+    strength: strengthAssessment,
+    pattern,
+    yongShen,
+    shenSha,
+    xunKong,
     luckCycles,
     analysis
   };

@@ -84,6 +84,19 @@ export const BRANCH_TRIPLE_RELATIONS = [
   { type: "三会", members: ["亥", "子", "丑"], result: "水" }
 ] as const;
 
+// 三合局的“半合”：三合三支中，凡含子/午/卯/酉（四正中神，五行之气最纯）的两支组合即可成局，
+// 力量弱于完整三合，但仍是命理分析中常用的合局信号。不含中神的两支（如申辰缺子）不计半合。
+export const BRANCH_HALF_TRIPLE_RELATIONS = [
+  { type: "半合", members: ["申", "子"], result: "水" },
+  { type: "半合", members: ["子", "辰"], result: "水" },
+  { type: "半合", members: ["亥", "卯"], result: "木" },
+  { type: "半合", members: ["卯", "未"], result: "木" },
+  { type: "半合", members: ["寅", "午"], result: "火" },
+  { type: "半合", members: ["午", "戌"], result: "火" },
+  { type: "半合", members: ["巳", "酉"], result: "金" },
+  { type: "半合", members: ["酉", "丑"], result: "金" }
+] as const;
+
 export const BRANCH_PUNISHMENTS = [
   { type: "相刑", members: ["子", "卯"] },
   { type: "相刑", members: ["寅", "巳"] },
@@ -244,6 +257,30 @@ export function findBranchTripleRelations(branches: string[]): Array<{
   const unique = [...new Set(branches)];
   return BRANCH_TRIPLE_RELATIONS
     .filter((relation) => relation.members.every((member) => unique.includes(member)))
+    .map((relation) => ({
+      type: relation.type,
+      members: [...relation.members],
+      result: relation.result
+    }));
+}
+
+// 半合判定：命局若已凑齐某三合局的三支，则该局内任意两支的“半合”视为已被完整三合覆盖，不重复列出，
+// 避免同一组地支既报三合又报半合造成信号冗余。
+export function findBranchHalfTripleRelations(branches: string[]): Array<{
+  type: string;
+  members: string[];
+  result: string;
+}> {
+  const unique = [...new Set(branches)];
+  const fullTripleGroups = BRANCH_TRIPLE_RELATIONS.filter((relation) =>
+    relation.members.every((member) => unique.includes(member))
+  );
+  const isCoveredByFullTriple = (members: readonly string[]) =>
+    fullTripleGroups.some((full) => members.every((member) => (full.members as readonly string[]).includes(member)));
+
+  return BRANCH_HALF_TRIPLE_RELATIONS
+    .filter((relation) => relation.members.every((member) => unique.includes(member)))
+    .filter((relation) => !isCoveredByFullTriple(relation.members))
     .map((relation) => ({
       type: relation.type,
       members: [...relation.members],

@@ -1,6 +1,7 @@
 import {
   SELF_PUNISHMENTS,
   STEM_COMBINATIONS,
+  findBranchHalfTripleRelations,
   findBranchPairRelation,
   findBranchTripleRelations,
   getElementInteraction
@@ -56,6 +57,10 @@ export function analyzeNatalRelations(pillars: PillarDetails[]): RelationRecord[
 
   for (const triple of findBranchTripleRelations(branches)) {
     relations.push(buildEarthlyRelation(triple.type, triple.members, triple.result));
+  }
+
+  for (const half of findBranchHalfTripleRelations(branches)) {
+    relations.push(buildEarthlyRelation(half.type, half.members, half.result));
   }
 
   const branchCounts = branches.reduce<Record<string, number>>((accumulator, branch) => {

@@ -53,7 +53,14 @@ function computeElementScores(profile: BaziProfile): ElementScores {
 
   const strongValue = totals[dayElement] + totals[generating];
   const weakValue = Object.values(totals).reduce((a, b) => a + b, 0) - strongValue;
-  const isStrong = strongValue > 29;
+  // 旺衰结论统一采用核心引擎的三维旺衰标准（profile.strength，与大运流年分析同源，
+  // 即 得令/得地/得势 细判 + supportRatio 中和态兵底），不再用本地单一阈值
+  // strongValue > 29 重新判定，避免网页展示结论与后端真实计算结论不一致。
+  const isStrong = profile.strength.level === "身旺" || profile.strength.level === "身强"
+    ? true
+    : profile.strength.level === "身弱" || profile.strength.level === "身极弱"
+      ? false
+      : profile.strength.supportRatio >= 0.5;
 
   return { totals, stemScores, branchScores, strongValue, weakValue, isStrong };
 }
@@ -181,33 +188,25 @@ function renderElementScores(scores: ElementScores, dayElement: Element): string
           <strong>29</strong>
         </div>
         <div class="strength-result ${scores.isStrong ? 'strong' : 'weak'}">
-          ${scores.isStrong ? "身旺" : "身弱"}
+          ${scores.isStrong ? "身旺偏强" : "身弱偏耐"}
         </div>
       </div>
+      <p class="hint">注：此处为五行总分的粗略参考值，最终旺衰结论以下方《身旺身弱判定》中的得令/得地/得势三维细判为准。</p>
     </div>`;
 }
 
 function renderStrengthJudgment(profile: BaziProfile, scores: ElementScores): string {
   const dayElement = profile.chart.dayMaster.element;
+  const s = profile.strength;
   const monthBranch = profile.chart.pillars[1].branch.value;
-  const monthState = MONTH_ELEMENT_STATE[monthBranch]?.[dayElement] || "";
-  const deLing = monthState === "旺" || monthState === "相";
+  const monthState = MONTH_ELEMENT_STATE[monthBranch]?.[dayElement] || "休囚";
 
-  const dayBranch = profile.chart.pillars[2].branch.value;
-  const diShi = profile.chart.pillars[2].diShi;
-  const strongRoots = ["临官", "帝旺", "长生", "冠带"];
-  const deDi = strongRoots.includes(diShi);
-
-  const generating = getGeneratingElement(dayElement);
-  const deSheng = profile.chart.pillars.some(p => p.stem.element === generating);
-
-  const deZhu = profile.chart.pillars.filter(p => p.key !== "day" && p.stem.element === dayElement).length > 0;
-
+  // 与核心引擎 src/scoring.ts 中 assessStrength 同源的三维细判（得令/得地/得势），
+  // 不再用本地重算的旧版四诀（得令/得地/得生/得助），确保页面展示的判据与真实结论一致。
   const checks = [
-    { label: "得令", result: deLing, detail: `月支${monthBranch}，${dayElement}在月令为"${monthState}"` },
-    { label: "得地", result: deDi, detail: `日支${dayBranch}，地势为"${diShi}"` },
-    { label: "得生", result: deSheng, detail: deSheng ? `有${generating}(印星)透干` : `无${generating}透干` },
-    { label: "得助", result: deZhu, detail: deZhu ? `有${dayElement}(比肩)透干` : `无${dayElement}(比肩)透干` }
+    { label: "得令", result: s.deLing, detail: `月支${monthBranch}，${dayElement}在月令处"${monthState}"势` },
+    { label: "得地", result: s.deDi, detail: `地支藏干通根权重合计${s.rootWeight.toFixed(1)}（≥5为得地）` },
+    { label: "得势", result: s.deShi, detail: `天干比劫/印星帮扶${s.helpingStemCount}位（≥2为得势）` }
   ];
 
   const rows = checks.map(c => `
@@ -225,9 +224,10 @@ function renderStrengthJudgment(profile: BaziProfile, scores: ElementScores): st
         ${rows}
       </table>
       <p class="judge-conclusion">
-        四诀 ${checks.filter(c => c.result).length}/4 通过 + 数值法身强值 ${scores.strongValue} > 中值29 →
-        <strong class="${scores.isStrong ? 'strong' : 'weak'}">${scores.isStrong ? "身旺" : "身弱"}</strong>
+        三诀 ${checks.filter(c => c.result).length}/3 通过，扶抵力占比 ${Math.round(s.supportRatio * 100)}% →
+        <strong class="${scores.isStrong ? 'strong' : 'weak'}">${s.level}</strong>
       </p>
+      <p class="hint">${s.reasons.join("")}</p>
     </div>`;
 }
 
@@ -596,15 +596,16 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
     formula: "日干五行 + 阴阳属性 → 基础性格底色"
   });
 
-  // 维度2: 身旺身弱 (20%)
+  // 维度2: 身旺身弱 (20%)，展示用的比例仍取自总分值，但 scores.isStrong 已与
+  // profile.strength（得令/得地/得势三维细判）同源，不再是固定阈值判定。
   const strengthRatio = scores.strongValue / (scores.strongValue + scores.weakValue);
   personalityTraits.push({
     dimension: "身强弱度",
     weight: "20%",
     analysis: scores.isStrong
-      ? `身强值${scores.strongValue}/总${scores.strongValue + scores.weakValue}(${Math.round(strengthRatio * 100)}%) → 自信、执行力强、不易动摇、容易固执`
-      : `身强值${scores.strongValue}/总${scores.strongValue + scores.weakValue}(${Math.round(strengthRatio * 100)}%) → 灵活、善借力、需支持、容易犹豫`,
-    formula: "身强值 = 比劫分 + 印星分；占比 > 53% 为旺"
+      ? `${profile.strength.level}（扶抵力占比${Math.round(profile.strength.supportRatio * 100)}%）→ 自信、执行力强、不易动摇、容易固执`
+      : `${profile.strength.level}（扶抵力占比${Math.round(profile.strength.supportRatio * 100)}%）→ 灵活、善借力、需支持、容易犹豫`,
+    formula: "身强值 = 比劫分 + 印星分；旺衰结论以得令/得地/得势三维细判为准"
   });
 
   // 维度3: 十神主轴 (25%)

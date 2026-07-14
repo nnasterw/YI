@@ -166,6 +166,61 @@ export interface FlowAnalysis {
   wealth: FlowDimensionAnalysis;
 }
 
+export type StrengthLevel = "身旺" | "身强" | "中和" | "身弱" | "身极弱";
+
+export interface StrengthAssessment {
+  level: StrengthLevel;
+  isStrong: boolean;
+  deLing: boolean;
+  deDi: boolean;
+  rootWeight: number;
+  deShi: boolean;
+  helpingStemCount: number;
+  supportRatio: number;
+  reasons: string[];
+}
+
+export type PatternCategory = "正格" | "变格";
+
+export interface PatternAssessment {
+  name: string;
+  category: PatternCategory;
+  governingStem: string;
+  governingTenGod: string;
+  isRevealed: boolean;
+  outcome: "成格" | "败格" | "待观察";
+  reasons: string[];
+}
+
+export type YongShenMethodName = "扶抑" | "病药" | "调候" | "通关";
+
+export interface YongShenMethodResult {
+  method: YongShenMethodName;
+  elements: Element[];
+  reason: string;
+}
+
+export interface YongShenAssessment {
+  yongShen: Element[];
+  xiShen: Element[];
+  jiShen: Element[];
+  primaryMethod: YongShenMethodName;
+  methods: YongShenMethodResult[];
+  reasons: string[];
+}
+
+export interface ShenShaRecord {
+  name: string;
+  basis: string;
+  hitPillars: string[];
+  description: string;
+}
+
+export interface XunKongAssessment {
+  emptyBranches: string[];
+  hitPillars: string[];
+}
+
 export interface BaziProfile {
   input: NormalizedBaziInput;
   birth: {
@@ -189,6 +244,11 @@ export interface BaziProfile {
     strongValue: number;
     weakValue: number;
   };
+  strength: StrengthAssessment;
+  pattern: PatternAssessment;
+  yongShen: YongShenAssessment;
+  shenSha: ShenShaRecord[];
+  xunKong: XunKongAssessment;
   luckCycles: LuckCycles;
   analysis: BaziAnalysis;
 }
