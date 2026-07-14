@@ -373,10 +373,6 @@ function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isS
       <td>${c.startAge}-${c.endAge}</td>
       <td>${c.startYear}-${c.endYear}</td>
       <td>${toneLabel(corrected.tone)}</td>
-      <td>${toneLabel(c.analysis.career.tone)}</td>
-      <td>${toneLabel(c.analysis.relationships.tone)}</td>
-      <td>${toneLabel(c.analysis.health.tone)}</td>
-      <td>${toneLabel(c.analysis.wealth.tone)}</td>
       <td class="${layers.stemIsPositive ? 'check-pass' : 'tone-bad'}">${layers.stemTenGod}</td>
       <td class="${layers.branchIsPositive ? 'check-pass' : 'tone-bad'}">${layers.branchElement}</td>
     </tr>`;
@@ -386,9 +382,9 @@ function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isS
     <div class="card">
       <h2>大运总览</h2>
       <p>起运：${lc.startSolar}（${lc.startOffset.years}年${lc.startOffset.months}月${lc.startOffset.days}日）| 方向：${lc.direction === "forward" ? "顺行" : "逆行"}</p>
-      <p class="hint">天干主前5年（明面主题），地支主后5年（底层环境）。</p>
+      <p class="hint">天干主前5年（明面主题），地支主后5年（底层环境）。各维度详细tone见下方「大运流年详情」。</p>
       <table class="luck-table">
-        <tr><th>运</th><th>干支</th><th>年龄</th><th>年份</th><th>整体</th><th>事业</th><th>感情</th><th>健康</th><th>财富</th><th>干(前5年)</th><th>支(后5年)</th></tr>
+        <tr><th>运</th><th>干支</th><th>年龄</th><th>年份</th><th>整体</th><th>干(前5年)</th><th>支(后5年)</th></tr>
         ${rows}
       </table>
     </div>`;
@@ -904,7 +900,6 @@ function renderKeyYears(profile: BaziProfile, dayElement: Element, isStrong: boo
           <span class="key-score">${a.score >= 0 ? '+' : ''}${a.score.toFixed(1)}</span>
         </div>
         <div class="key-year-detail">
-          <p>${a.analysis.overall.summary[0] || ''}</p>
           <p class="score-formula">${a.breakdown}</p>
         </div>
       </div>`;
