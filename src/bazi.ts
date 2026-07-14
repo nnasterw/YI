@@ -274,8 +274,13 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
   const shenSha = calculateShenSha(pillars);
   const xunKong = calculateXunKong(pillars);
   const yun = eightChar.getYun(toGenderNumber(input.gender), input.luckSect);
-  // 大运流年评分的旺衰开关统一采用新版三维旺衰结论（得令/得地/得势细判），
-  // 不再使用旧版 computeStrength 的单一总分阈值，避免两套标准在边界案例上互相矛盾。
+  // 全局统一的旺衰开关：采用新版三维旺衰结论（得令/得地/得势细判）推导单一布尔值，
+  // 不再使用旧版 computeStrength 的单一总分阈值（strongValue>29）。
+  // 该阈值与三维细判在边界案例上约3.9%概率互相矛盾（如 strongValue=29 恰好被
+  // 旧阈值判为身弱，但得令+得地+得势三项已有两项成立、supportRatio也过半，
+  // 三维标准判定为身强），曾导致 profile.strengthAssessment.isStrong 与
+  // profile.strength.level 在同一份报告里给出相反结论。此处推导结果会同时
+  // 供大运流年评分与对外的 strengthAssessment.isStrong 字段使用，确保全局唯一口径。
   const isStrongForFlow =
     strengthAssessment.level === "身旺" || strengthAssessment.level === "身强"
       ? true
@@ -325,7 +330,7 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     elementBalance,
     tenGodDistribution,
     strengthAssessment: {
-      isStrong: strength.isStrong,
+      isStrong: isStrongForFlow,
       strongValue: strength.strongValue,
       weakValue: strength.weakValue
     },

@@ -193,7 +193,10 @@ export function assessYongShen(
   const reasons = [primary.reason];
 
   if (pattern?.category === "变格") {
-    if (pattern.name === "从强格" || pattern.name === "建禄格" || pattern.name === "羊刃格") {
+    // 注：建禄格/羊刃格在 determinePattern 中恒为 category="正格"（只有 checkVariantPattern
+    // 命中从强/从财/从杀/从儿时才会把 name 覆盖为对应的"从X格"并置 category="变格"，
+    // 建禄格/羊刃格的 name 不会与 category="变格" 同时出现），故此分支只处理真正的从强格。
+    if (pattern.name === "从强格") {
       // 顺其旺势：取同气与印星（生我者）为用，不取克泄耗
       yongShen = [dayElement, GENERATING[dayElement]];
       reasons.push(`${pattern.name}日主气势独旺，宜顺其旺势，以同气及生扶之神为用，不宜逆抑。`);
