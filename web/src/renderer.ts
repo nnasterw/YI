@@ -216,24 +216,7 @@ function renderElementScores(scores: ElementScores, dayElement: Element): string
     <div class="card">
       <h2>五行分布</h2>
       <div class="bar-chart">${bars}</div>
-      <div class="strength-summary">
-        <div class="strength-item">
-          <span>身强值（${dayElement}+${getGeneratingElement(dayElement)}）</span>
-          <strong>${scores.strongValue}</strong>
-        </div>
-        <div class="strength-item">
-          <span>克泄耗值</span>
-          <strong>${scores.weakValue}</strong>
-        </div>
-        <div class="strength-item">
-          <span>中值</span>
-          <strong>29</strong>
-        </div>
-        <div class="strength-result ${scores.isStrong ? 'strong' : 'weak'}">
-          ${scores.isStrong ? "身旺偏强" : "身弱偏耐"}
-        </div>
-      </div>
-      <p class="hint">注：此处为五行总分的粗略参考值，最终旺衰结论以下方《身旺身弱判定》中的得令/得地/得势三维细判为准。</p>
+      <p class="hint">身强值（${dayElement}+${getGeneratingElement(dayElement)}）= ${scores.strongValue}，克泄耗值 = ${scores.weakValue}。旺衰细判见下方《身旺身弱判定》。</p>
     </div>`;
 }
 
@@ -322,21 +305,6 @@ function renderTenGods(profile: BaziProfile): string {
       return `<tr class="${isDom ? 'dominant' : ''}"><td>${god}</td><td>${count}</td><td class="tengod-desc">${tooltip}</td></tr>`;
     }).join("");
 
-  const dominantDetails = dist.dominant.map(god => {
-    const info = TEN_GOD_CONCRETE[god];
-    if (!info) return "";
-    return `
-      <div class="tengod-detail">
-        <h4>${god}（主轴）</h4>
-        <ul>
-          <li><strong>事业</strong>：${info.career}</li>
-          <li><strong>性格</strong>：${info.personality}</li>
-          <li><strong>感情</strong>：${info.relationship}</li>
-          <li><strong>财富</strong>：${info.wealth}</li>
-        </ul>
-      </div>`;
-  }).join("");
-
   return `
     <div class="card">
       <h2>十神分布</h2>
@@ -346,7 +314,6 @@ function renderTenGods(profile: BaziProfile): string {
       </table>
       <p>主轴：<strong>${dist.dominant.join("、")}</strong></p>
       <p>${dist.observations.join(" ")}</p>
-      ${dominantDetails}
     </div>`;
 }
 
@@ -654,9 +621,7 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
     formula: "日干五行 + 阴阳属性 → 基础性格底色"
   });
 
-  // 维度2: 身旺身弱 (20%)，展示用的比例仍取自总分值，但 scores.isStrong 已与
-  // profile.strength（得令/得地/得势三维细判）同源，不再是固定阈值判定。
-  const strengthRatio = scores.strongValue / (scores.strongValue + scores.weakValue);
+  // 维度2: 身旺身弱 (20%)，scores.isStrong 已与 profile.strength（得令/得地/得势三维细判）同源。
   personalityTraits.push({
     dimension: "身强弱度",
     weight: "20%",
@@ -718,75 +683,22 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
       </div>`);
   }
 
-  // 身旺弱对性格的具体影响
-  if (scores.isStrong) {
-    detailSections.push(`
-      <div class="personality-detail">
-        <h4>身旺特征（强度 ${Math.round(strengthRatio * 100)}%）</h4>
-        <ul>
-          <li><strong>决策风格</strong>：倾向先做再想，执行力强但可能忽略他人意见</li>
-          <li><strong>社交模式</strong>：选择性社交，重视对等关系，不轻易示弱</li>
-          <li><strong>抗压能力</strong>：高。外部压力不容易击垮你，但可能忽视身体信号</li>
-          <li><strong>核心课题</strong>：学会倾听、适当示弱、接纳不同观点</li>
-        </ul>
-      </div>`);
-  } else {
-    detailSections.push(`
-      <div class="personality-detail">
-        <h4>身弱特征（强度 ${Math.round(strengthRatio * 100)}%）</h4>
-        <ul>
-          <li><strong>决策风格</strong>：倾向深思熟虑，善于借力但可能错过时机</li>
-          <li><strong>社交模式</strong>：善于维护关系，有亲和力，但容易被消耗</li>
-          <li><strong>抗压能力</strong>：中等。需要支持系统（贵人、平台），孤军奋战容易疲劳</li>
-          <li><strong>核心课题</strong>：建立自信、敢于拒绝、减少对外部认可的依赖</li>
-        </ul>
-      </div>`);
-  }
-
-  // 十神组合性格描述
-  const comboDescriptions: string[] = [];
-  if (dominant.name === "比劫" && dominant.pct >= 25) {
-    comboDescriptions.push(`<li><strong>比劫主导(${dominant.pct}%)</strong>：独立意识极强。宁可自己多走弯路，也不愿照别人的路线走。表面随和但内心有明确的评判标准。朋友不多但每个都深交。</li>`);
-  }
-  if (dominant.name === "食伤" || (secondary.name === "食伤" && secondary.pct >= 20)) {
-    const shiPct = tenGodWeights.find(t => t.name === "食伤")!.pct;
-    comboDescriptions.push(`<li><strong>食伤活跃(${shiPct}%)</strong>：天生的创作者和表达者。对品质有追求，做事讲究"调性"。享受从零到一的过程快感。有口福和审美力。</li>`);
-  }
-  if (dominant.name === "官杀" || (secondary.name === "官杀" && secondary.pct >= 20)) {
-    const guanPct = tenGodWeights.find(t => t.name === "官杀")!.pct;
-    comboDescriptions.push(`<li><strong>官杀压力(${guanPct}%)</strong>：对自己要求高，责任感重。在压力下反而发挥好。但容易给自己太大负担，需要学会放松和"够好就行"。</li>`);
-  }
-  if (dominant.name === "财星" || (secondary.name === "财星" && secondary.pct >= 20)) {
-    const caiPct = tenGodWeights.find(t => t.name === "财星")!.pct;
-    comboDescriptions.push(`<li><strong>财星务实(${caiPct}%)</strong>：天生的资源整合者。对"值不值"有直觉判断力。做事看结果，不做无意义的消耗。</li>`);
-  }
-  if (dominant.name === "印星" || (secondary.name === "印星" && secondary.pct >= 20)) {
-    const yinPct = tenGodWeights.find(t => t.name === "印星")!.pct;
-    comboDescriptions.push(`<li><strong>印星好学(${yinPct}%)</strong>：学习吸收力极强，接受新事物快。有人缘和贵人运。但容易"想太多做太少"，需要食伤来推动输出。</li>`);
-  }
-
-  if (comboDescriptions.length > 0) {
+  // 十神性格色彩——一句话概括主轴，详细组合分析见「十神组合分析」卡片
+  const comboSummary: Record<string, string> = {
+    "比劫": "独立意识强，重视对等关系，不轻易示弱",
+    "食伤": "天生的创作者和表达者，追求品质和过程快感",
+    "财星": "资源整合者，对价值有直觉判断力，做事看结果",
+    "官杀": "对自己要求高，压力下反而发挥好",
+    "印星": "学习吸收力强，有人缘和贵人运，但容易想多做少",
+  };
+  const colorLines = [dominant, secondary]
+    .filter(t => t.pct >= 20)
+    .map(t => `${t.name}(${t.pct}%)：${comboSummary[t.name] || ""}`);
+  if (colorLines.length > 0) {
     detailSections.push(`
       <div class="personality-detail">
         <h4>十神性格色彩</h4>
-        <ul>${comboDescriptions.join("")}</ul>
-      </div>`);
-  }
-
-  // 冲合对性格的影响
-  if (clashes.length > 0 || combines.length > 0) {
-    const dynamicTraits: string[] = [];
-    if (clashes.length >= 2) dynamicTraits.push("内心躁动、闲不住、需要变化和新刺激");
-    if (clashes.length === 1) dynamicTraits.push("有动态因子但可控，适度变化中成长");
-    if (combines.length >= 2) dynamicTraits.push("善于建立连接、有合作天赋、容易被人牵动");
-    const dayBranchClash = clashes.find(r => r.members.includes(dayBranch));
-    if (dayBranchClash) dynamicTraits.push(`日支逢${dayBranchClash.type}——亲密关系中容易有摩擦和波动`);
-
-    detailSections.push(`
-      <div class="personality-detail">
-        <h4>冲合对性格的塑造</h4>
-        <p>命盘中 ${combines.length} 合 / ${clashes.length} 冲刑害：</p>
-        <ul>${dynamicTraits.map(t => `<li>${t}</li>`).join("")}</ul>
+        <p>${colorLines.join("；")}。详细组合分析见下方「十神组合分析」。</p>
       </div>`);
   }
 
@@ -796,7 +708,6 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
       <h4>生活喜好推导</h4>
       <table class="pref-table">
         <tr><th>维度</th><th>偏好</th><th>推导逻辑</th></tr>
-        <tr><td>做事风格</td><td>${scores.isStrong ? "先做后想、追求效率" : "深思熟虑、追求稳妥"}</td><td>身${scores.isStrong ? "旺" : "弱"} → ${scores.isStrong ? "执行力导向" : "安全感导向"}</td></tr>
         <tr><td>学习方式</td><td>${shiShang >= biJie ? "动手型——做中学最快" : yinXing >= 2 ? "吸收型——读书听课效率高" : "混合型"}</td><td>${shiShang >= biJie ? "食伤≥比劫 → 输出即学习" : yinXing >= 2 ? "印星≥2 → 被动接收型" : "均衡分布"}</td></tr>
         <tr><td>社交风格</td><td>${biJie >= 3 ? "少而精，重质不重量" : caiXing >= 3 ? "广而浅，资源型社交" : "选择性社交"}</td><td>${biJie >= 3 ? "比劫≥3 → 独立型社交" : caiXing >= 3 ? "财星≥3 → 经营型社交" : "无极端偏向"}</td></tr>
         <tr><td>消费偏好</td><td>${shiShang >= 2 ? "追求品质和体验" : caiXing >= 3 ? "注重性价比和回报" : "量入为出"}</td><td>${shiShang >= 2 ? "食伤旺 → 品质导向" : caiXing >= 3 ? "财星旺 → 投资导向" : "中性"}</td></tr>
@@ -1023,7 +934,7 @@ function renderLifeRhythm(profile: BaziProfile, isStrong: boolean): string {
           <div class="rhythm-bar ${barClass}"></div>
         </div>
         <div class="rhythm-gz ganzhi">${c.ganZhi}</div>
-        <div class="rhythm-desc">${layers.stemTenGod}(${layers.stemIsPositive ? '喜' : '忌'}) · ${c.analysis.overall.summary[0]?.substring(0, 25) || ''}</div>
+        <div class="rhythm-desc">${layers.stemTenGod}(${layers.stemIsPositive ? '喜' : '忌'}) · ${layers.branchElement}</div>
       </div>`;
   }).join("");
 
@@ -1068,20 +979,10 @@ function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isS
     </div>`;
 }
 
-function renderCareerPath(profile: BaziProfile, scores: ElementScores, favorable: FavorableElements): string {
+function renderCareerPath(profile: BaziProfile, scores: ElementScores, _favorable: FavorableElements): string {
+  // "适合方向"已由核心结论卡的 career 维度覆盖，此处只展示大运流年中
+  // 食伤透出的爆发窗口——这是 renderer 独有的时间维度分析。
   const dm = profile.chart.dayMaster;
-  const dist = profile.tenGodDistribution;
-  const shiShang = (dist.counts["食神"] ?? 0) + (dist.counts["伤官"] ?? 0);
-  const guanSha = (dist.counts["正官"] ?? 0) + (dist.counts["七杀"] ?? 0);
-  const caiXing = (dist.counts["正财"] ?? 0) + (dist.counts["偏财"] ?? 0);
-
-  const directions: Array<{name: string; stars: number; reason: string}> = [];
-  if (shiShang >= 2) directions.push({name: "创作/技术/表达", stars: 5, reason: "食伤泄秀=核心通道"});
-  if (caiXing >= 2) directions.push({name: "经营/投资/商贸", stars: 4, reason: "财星活跃"});
-  if (guanSha >= 2) directions.push({name: "管理/体制/法律", stars: 3, reason: "官杀制身"});
-  if (directions.length === 0) directions.push({name: "综合发展", stars: 3, reason: "十神均衡"});
-
-  const dirRows = directions.map(d => `<li><strong>${d.name}</strong> ${'⭐'.repeat(d.stars)} <span class="hint">${d.reason}</span></li>`).join("");
 
   const explosionYears: string[] = [];
   for (const cycle of profile.luckCycles.cycles) {
@@ -1094,19 +995,13 @@ function renderCareerPath(profile: BaziProfile, scores: ElementScores, favorable
     }
   }
 
+  if (explosionYears.length === 0) return "";
+
   return `
     <div class="card">
-      <h2>事业路径</h2>
-      <div class="personality-detail">
-        <h4>适合方向</h4>
-        <ul>${dirRows}</ul>
-      </div>
-      ${explosionYears.length > 0 ? `
-      <div class="personality-detail">
-        <h4>事业爆发窗口（食伤透出年）</h4>
-        <p class="hint">身旺命局，食伤透出=用神到位=出成绩的最佳时机</p>
-        <ul>${explosionYears.slice(0, 10).map(y => `<li>${y}</li>`).join("")}</ul>
-      </div>` : ""}
+      <h2>事业爆发窗口</h2>
+      <p class="hint">身旺命局，食伤透出=用神到位=出成绩的最佳时机</p>
+      <ul>${explosionYears.slice(0, 10).map(y => `<li>${y}</li>`).join("")}</ul>
     </div>`;
 }
 
