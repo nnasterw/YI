@@ -40,8 +40,10 @@ const TEN_GOD_PRIORITY: Record<string, number> = {
 };
 
 /**
- * 格局判定：以月令藏干为纲，优先取天干透出者为格；若月令本气与余气均未透干，
- * 则退而以月令本气本身定格（不拘泥于必须透干）。随后结合旺衰评估，
+ * 格局判定：以月令藏干为纲。月令本气（权重最大的藏干）若非比肩/劫财，直接以本气定格
+ * （无论是否透干）；仅当本气恰为比肩/劫财（帮身之物不能自身成格）时，才退而在中气、余气
+ * 范围内择优（透干优先，同等透干情况按官杀>财>印>食伤的十神优先级取舍）。
+ * 月支恰为日主禄地/刃地的特殊情形单独归为建禄格/羊刃格。随后结合旺衰评估，
  * 判断是否满足从强、从弱等变格条件，变格条件成立时优先采用变格。
  */
 export function determinePattern(
@@ -78,32 +80,45 @@ export function determinePattern(
     isRevealed = true;
     reasons.push(`月支${monthBranch}为日主${dayStem}帝旺刃地，月令本气即为劫财，归羊刃格。`);
   } else {
-    const candidates = monthHiddenStems
-      .map((stem) => ({
-        stem,
-        tenGod: computeTenGod(dayStem, stem),
-        weight: HIDDEN_STEM_WEIGHTS[monthBranch][stem],
-        revealed: allStems.includes(stem)
-      }))
-      .filter((candidate) => candidate.tenGod !== "比肩" || candidate.stem !== dayStem);
+    const allCandidates = monthHiddenStems.map((stem) => ({
+      stem,
+      tenGod: computeTenGod(dayStem, stem),
+      weight: HIDDEN_STEM_WEIGHTS[monthBranch][stem],
+      revealed: allStems.includes(stem)
+    }));
 
-    const revealedCandidates = candidates.filter((candidate) => candidate.revealed && candidate.tenGod !== "比肩");
-    const pool = revealedCandidates.length > 0 ? revealedCandidates : candidates;
+    // 月令本气（权重最大的藏干）是格局判定的主体：只要本气不是比肩/劫财（帮身之物无法自身成格），
+    // 就应直接以本气定格，不与权重远小的中气、余气比较十神优先级——
+    // 否则会出现杂气月（辰戌丑未）本气为比肩/劫财时才需要的"舍本气取余气"逻辑，
+    // 被错误地套用到本气并非比肩/劫财的场合，导致权重占绝对主导的本气被权重很小的中余气反超定格。
+    const dominant = allCandidates.reduce((a, b) => (b.weight > a.weight ? b : a));
 
-    pool.sort((a, b) => {
-      const priorityDiff = (TEN_GOD_PRIORITY[a.tenGod] ?? 99) - (TEN_GOD_PRIORITY[b.tenGod] ?? 99);
-      if (priorityDiff !== 0) return priorityDiff;
-      return b.weight - a.weight;
-    });
+    let best: typeof allCandidates[number];
+    if (dominant.tenGod !== "比肩" && dominant.tenGod !== "劫财") {
+      best = dominant;
+    } else {
+      // 本气为比肩/劫财，帮身不能自身成格，退而在中气、余气范围内择优（透干优先，同等透干情况下按十神优先级、权重取舍）。
+      const secondary = allCandidates.filter((candidate) => candidate.stem !== dominant.stem);
+      const pool = secondary.length > 0 ? secondary : allCandidates;
+      const revealedPool = pool.filter((candidate) => candidate.revealed);
+      const finalPool = revealedPool.length > 0 ? revealedPool : pool;
+      finalPool.sort((a, b) => {
+        const priorityDiff = (TEN_GOD_PRIORITY[a.tenGod] ?? 99) - (TEN_GOD_PRIORITY[b.tenGod] ?? 99);
+        if (priorityDiff !== 0) return priorityDiff;
+        return b.weight - a.weight;
+      });
+      best = finalPool[0] ?? dominant;
+    }
 
-    const best = pool[0] ?? { stem: monthHiddenStems[0], tenGod: computeTenGod(dayStem, monthHiddenStems[0]), weight: 1, revealed: false };
     name = PATTERN_NAME_MAP[best.tenGod] ?? "杂气格";
     governingStem = best.stem;
     governingTenGod = best.tenGod;
     isRevealed = best.revealed;
 
     reasons.push(
-      `月令${monthBranch}藏干${best.stem}（${best.tenGod}）${best.revealed ? "透出天干，格局清纯" : "未透天干，以本气定格"}。`
+      best.stem === dominant.stem
+        ? `月令${monthBranch}藏干${best.stem}（${best.tenGod}）为本气，${best.revealed ? "且透出天干，格局清纯" : "未透天干，以本气定格"}。`
+        : `月令${monthBranch}本气${dominant.stem}（${dominant.tenGod}）帮身不能自成格局，改取${best.revealed ? "透干" : "未透"}的${best.stem}（${best.tenGod}）定格。`
     );
 
     // 伤官格细分：有官杀制衡则为“有制”，官杀伤尽则为“伤尽”
