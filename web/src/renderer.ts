@@ -114,6 +114,48 @@ function elSpan(el: string): string {
   return `<span style="color:${ELEMENT_COLOR[el] || '#ccc'}">${el}</span>`;
 }
 
+function normalizeReportLine(line: string): string {
+  return line.replace(/\s+/g, " ").trim();
+}
+
+function isFallbackLine(line: string): boolean {
+  return [
+    "建议结合",
+    "更适合结合",
+    "暂无单一强信号",
+    "后续如果做更细报告",
+    "可以把",
+    "建议重点看",
+    "趋势提示"
+  ].some(keyword => line.includes(keyword));
+}
+
+function pickReportLines(lines: string[] = [], maxItems = 2): string[] {
+  const unique = Array.from(new Set(lines.map(normalizeReportLine).filter(Boolean)));
+  return unique
+    .sort((a, b) => {
+      const fallbackDelta = Number(isFallbackLine(a)) - Number(isFallbackLine(b));
+      if (fallbackDelta !== 0) return fallbackDelta;
+      return a.length - b.length;
+    })
+    .slice(0, maxItems);
+}
+
+function summarizeDimension(lines: string[] = []): string {
+  return pickReportLines(lines, 1)[0] || "";
+}
+
+function pickSignalTags(signals: FlowAnalysis["signals"] = [], maxItems = 4): FlowAnalysis["signals"] {
+  const seen = new Set<string>();
+
+  return signals.filter(signal => {
+    const key = `${signal.category}:${signal.type}:${signal.tone}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, maxItems);
+}
+
 function renderBasicInfo(profile: BaziProfile): string {
   const dm = profile.chart.dayMaster;
   const dayPillar = profile.chart.pillars.find(p => p.key === "day")!;
@@ -324,20 +366,27 @@ function renderRelations(profile: BaziProfile): string {
 
 function renderNarrativeAnalysis(profile: BaziProfile): string {
   const a = profile.analysis;
-  const dimensions = [
-    { key: "overview", label: "总览" },
+  const sections = [
+    { key: "overview", label: "命局主线" },
     { key: "career", label: "事业" },
     { key: "relationships", label: "感情" },
-    { key: "health", label: "健康" },
-    { key: "wealth", label: "财富" }
-  ];
-
-  const sections = dimensions.map(d => {
-    const lines = (a as Record<string, string[]>)[d.key] || [];
-    return `<div class="analysis-dim"><h3>${d.label}</h3><ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`;
+    { key: "wealth", label: "财富" },
+    { key: "health", label: "健康" }
+  ].map(d => {
+    const lines = pickReportLines((a as Record<string, string[]>)[d.key] || [], d.key === "overview" ? 2 : 1);
+    return `
+      <div class="analysis-dim">
+        <h3>${d.label}</h3>
+        <ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>
+      </div>`;
   }).join("");
 
-  return `<div class="card"><h2>命盘分析</h2>${sections}</div>`;
+  return `
+    <div class="card">
+      <h2>核心结论</h2>
+      <p class="hint">先看主线，再回到各章节查看依据与细节。</p>
+      ${sections}
+    </div>`;
 }
 
 function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isStrong: boolean): string {
@@ -452,6 +501,7 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
   const dimSections = dims.map(d => {
     const dim = (a.analysis as Record<string, { tone: string; summary: string[] }>)[d.key];
     if (!dim) return "";
+    const summaries = pickReportLines(dim.summary, d.key === "overall" ? 2 : 1);
     return `
       <div class="annual-dim ${dim.tone}">
         <div class="annual-dim-header">
@@ -460,12 +510,12 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
           ${toneLabel(dim.tone)}
         </div>
         <ul class="dim-details">
-          ${dim.summary.map(s => `<li>${s}</li>`).join("")}
+          ${summaries.map(s => `<li>${s}</li>`).join("")}
         </ul>
       </div>`;
   }).join("");
 
-  const signals = a.analysis.signals || [];
+  const signals = pickSignalTags(a.analysis.signals || [], 4);
   const signalHtml = signals.length > 0 ? `
     <div class="annual-signals">
       <h5>触发信号</h5>
@@ -515,11 +565,11 @@ function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStr
         </summary>
         <div class="cycle-analysis">
           <div class="cycle-dims">
-            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${cycle.analysis.overall.summary.join(" ")}</div>
-            <div class="cycle-dim"><span class="dim-icon">💼</span><strong>事业</strong> ${toneLabel(cycle.analysis.career.tone)}：${cycle.analysis.career.summary.join(" ")}</div>
-            <div class="cycle-dim"><span class="dim-icon">❤️</span><strong>感情</strong> ${toneLabel(cycle.analysis.relationships.tone)}：${cycle.analysis.relationships.summary.join(" ")}</div>
-            <div class="cycle-dim"><span class="dim-icon">🏥</span><strong>健康</strong> ${toneLabel(cycle.analysis.health.tone)}：${cycle.analysis.health.summary.join(" ")}</div>
-            <div class="cycle-dim"><span class="dim-icon">💰</span><strong>财富</strong> ${toneLabel(cycle.analysis.wealth.tone)}：${cycle.analysis.wealth.summary.join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${pickReportLines(cycle.analysis.overall.summary, 2).join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">💼</span><strong>事业</strong> ${toneLabel(cycle.analysis.career.tone)}：${summarizeDimension(cycle.analysis.career.summary)}</div>
+            <div class="cycle-dim"><span class="dim-icon">❤️</span><strong>感情</strong> ${toneLabel(cycle.analysis.relationships.tone)}：${summarizeDimension(cycle.analysis.relationships.summary)}</div>
+            <div class="cycle-dim"><span class="dim-icon">🏥</span><strong>健康</strong> ${toneLabel(cycle.analysis.health.tone)}：${summarizeDimension(cycle.analysis.health.summary)}</div>
+            <div class="cycle-dim"><span class="dim-icon">💰</span><strong>财富</strong> ${toneLabel(cycle.analysis.wealth.tone)}：${summarizeDimension(cycle.analysis.wealth.summary)}</div>
           </div>
         </div>
         <div class="annual-list">
@@ -1032,6 +1082,7 @@ function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isS
   const dm = profile.chart.dayMaster;
   const dayBranchAnalysis = analyzeDayBranch(profile);
   const gender = profile.input.gender;
+  const relationshipSummary = summarizeDimension(profile.analysis.relationships) || dayBranchAnalysis.spousePalace;
 
   const targetTenGods = gender === "male" ? ["正财", "偏财"] : ["正官", "七杀"];
   const windows: string[] = [];
@@ -1050,9 +1101,8 @@ function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isS
     <div class="card">
       <h2>感情专项</h2>
       <div class="personality-detail">
-        <h4>配偶宫</h4>
-        <p>${dayBranchAnalysis.spousePalace}</p>
-        <p>${dayBranchAnalysis.clashRisk}</p>
+        <h4>关系主线</h4>
+        <p>${relationshipSummary}</p>
       </div>
       <div class="personality-detail">
         <h4>感情活跃窗口（${gender === "male" ? "财星" : "官星"}透出年）</h4>
@@ -1113,6 +1163,7 @@ export function renderReport(profile: BaziProfile): string {
 
   return [
     // === 第一区：画像与性格（叙事优先）===
+    renderNarrativeAnalysis(profile),
     renderPortrait(profile, scores, combos),
     renderPersonality(profile, scores, favorable),
     renderCombinations(combos),
@@ -1140,7 +1191,6 @@ export function renderReport(profile: BaziProfile): string {
     // === 第五区：速查 ===
     renderTenGods(profile),
     renderRelations(profile),
-    renderNarrativeAnalysis(profile),
     renderLifetimeLookup(dayElement, favorable)
   ].join("");
 }
