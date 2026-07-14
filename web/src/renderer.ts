@@ -142,7 +142,7 @@ function pickReportLines(lines: string[] = [], maxItems = 2): string[] {
 }
 
 function summarizeDimension(lines: string[] = []): string {
-  return pickReportLines(lines, 1)[0] || "";
+  return pickReportLines(lines, 1)[0] || "无明显触发信号";
 }
 
 function pickSignalTags(signals: FlowAnalysis["signals"] = [], maxItems = 4): FlowAnalysis["signals"] {
@@ -473,6 +473,9 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
     const dim = (a.analysis as Record<string, { tone: string; summary: string[] }>)[d.key];
     if (!dim) return "";
     const summaries = pickReportLines(dim.summary, d.key === "overall" ? 2 : 1);
+    const detailsHtml = summaries.length > 0
+      ? `<ul class="dim-details">${summaries.map(s => `<li>${s}</li>`).join("")}</ul>`
+      : `<p class="dim-empty">无明显触发信号</p>`;
     return `
       <div class="annual-dim ${dim.tone}">
         <div class="annual-dim-header">
@@ -480,9 +483,7 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
           <span class="dim-label">${d.label}</span>
           ${toneLabel(dim.tone)}
         </div>
-        <ul class="dim-details">
-          ${summaries.map(s => `<li>${s}</li>`).join("")}
-        </ul>
+        ${detailsHtml}
       </div>`;
   }).join("");
 
@@ -506,11 +507,8 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
         <span class="ganzhi">${a.ganZhi}</span>
         <span class="annual-tones">
           ${toneLabel(overallTone)}
-          ${toneLabel(a.analysis.career.tone)}
-          ${toneLabel(a.analysis.relationships.tone)}
-          ${toneLabel(a.analysis.health.tone)}
-          ${toneLabel(a.analysis.wealth.tone)}
         </span>
+        <span class="annual-tone-hint">展开看各维度</span>
       </summary>
       <div class="annual-expanded">
         ${breakdownHtml}
@@ -536,7 +534,7 @@ function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStr
         </summary>
         <div class="cycle-analysis">
           <div class="cycle-dims">
-            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${pickReportLines(cycle.analysis.overall.summary, 2).join(" ")}</div>
+            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${pickReportLines(cycle.analysis.overall.summary, 2).join(" ") || "无明显触发信号"}</div>
             <div class="cycle-dim"><span class="dim-icon">💼</span><strong>事业</strong> ${toneLabel(cycle.analysis.career.tone)}：${summarizeDimension(cycle.analysis.career.summary)}</div>
             <div class="cycle-dim"><span class="dim-icon">❤️</span><strong>感情</strong> ${toneLabel(cycle.analysis.relationships.tone)}：${summarizeDimension(cycle.analysis.relationships.summary)}</div>
             <div class="cycle-dim"><span class="dim-icon">🏥</span><strong>健康</strong> ${toneLabel(cycle.analysis.health.tone)}：${summarizeDimension(cycle.analysis.health.summary)}</div>
@@ -546,7 +544,7 @@ function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStr
         <div class="annual-list">
           <div class="annual-list-header">
             <span>年份</span><span>年龄</span><span>干支</span>
-            <span>整体 / 事业 / 感情 / 健康 / 财富</span>
+            <span>整体</span>
           </div>
           ${annualItems}
         </div>
@@ -703,10 +701,10 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
     <div class="personality-detail">
       <h4>生活喜好推导</h4>
       <table class="pref-table">
-        <tr><th>维度</th><th>偏好</th><th>推导逻辑</th></tr>
-        <tr><td>学习方式</td><td>${shiShang >= biJie ? "动手型——做中学最快" : yinXing >= 2 ? "吸收型——读书听课效率高" : "混合型"}</td><td>${shiShang >= biJie ? "食伤≥比劫 → 输出即学习" : yinXing >= 2 ? "印星≥2 → 被动接收型" : "均衡分布"}</td></tr>
-        <tr><td>社交风格</td><td>${biJie >= 3 ? "少而精，重质不重量" : caiXing >= 3 ? "广而浅，资源型社交" : "选择性社交"}</td><td>${biJie >= 3 ? "比劫≥3 → 独立型社交" : caiXing >= 3 ? "财星≥3 → 经营型社交" : "无极端偏向"}</td></tr>
-        <tr><td>消费偏好</td><td>${shiShang >= 2 ? "追求品质和体验" : caiXing >= 3 ? "注重性价比和回报" : "量入为出"}</td><td>${shiShang >= 2 ? "食伤旺 → 品质导向" : caiXing >= 3 ? "财星旺 → 投资导向" : "中性"}</td></tr>
+        <tr><th>维度</th><th>偏好</th><th>主导十神</th></tr>
+        <tr><td>学习方式</td><td>${shiShang >= biJie ? "动手型——做中学最快" : yinXing >= 2 ? "吸收型——读书听课效率高" : "混合型"}</td><td>${shiShang >= biJie ? "食伤" : yinXing >= 2 ? "印星" : "均衡"}</td></tr>
+        <tr><td>社交风格</td><td>${biJie >= 3 ? "少而精，重质不重量" : caiXing >= 3 ? "广而浅，资源型社交" : "选择性社交"}</td><td>${biJie >= 3 ? "比劫" : caiXing >= 3 ? "财星" : "均衡"}</td></tr>
+        <tr><td>消费偏好</td><td>${shiShang >= 2 ? "追求品质和体验" : caiXing >= 3 ? "注重性价比和回报" : "量入为出"}</td><td>${shiShang >= 2 ? "食伤" : caiXing >= 3 ? "财星" : "中性"}</td></tr>
       </table>
     </div>`;
 
@@ -945,7 +943,10 @@ function renderRelationshipWindow(profile: BaziProfile, dayElement: Element, isS
   const dm = profile.chart.dayMaster;
   const dayBranchAnalysis = analyzeDayBranch(profile);
   const gender = profile.input.gender;
-  const relationshipSummary = summarizeDimension(profile.analysis.relationships) || dayBranchAnalysis.spousePalace;
+  const relationshipSummary = (() => {
+    const s = summarizeDimension(profile.analysis.relationships);
+    return s && s !== "无明显触发信号" ? s : dayBranchAnalysis.spousePalace;
+  })();
 
   const targetTenGods = gender === "male" ? ["正财", "偏财"] : ["正官", "七杀"];
   const windows: string[] = [];

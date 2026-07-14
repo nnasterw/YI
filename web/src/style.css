@@ -1186,3 +1186,16 @@ th {
     font-size: 0.65rem;
   }
 }
+
+.annual-tone-hint {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.dim-empty {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  opacity: 0.5;
+  padding: 0.3rem 0;
+}

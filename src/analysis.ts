@@ -272,9 +272,7 @@ export function buildNarrativeAnalysis(args: {
     `格局定为${pattern.name}（${pattern.category}），以${pattern.governingTenGod}为纲，当前判断倾向${pattern.outcome}。`
   );
   overview.push(
-    `用神取用以${yongShen.primaryMethod}法为主，首选五行为${yongShen.yongShen.join("、")}，忌神方向为${
-      yongShen.jiShen.length > 0 ? yongShen.jiShen.join("、") : "不明显"
-    }。`
+    `用神取用以${yongShen.primaryMethod}法为主，具体喜忌五行与方位详见下方「喜忌用神」表。`
   );
   if (strength.level === "中和") {
     overview.push("日主中和，扶抑之力大致平衡，需结合格局与用神再定取舍。");
@@ -980,7 +978,7 @@ export function buildFlowAnalysis(args: {
   const summaries = FLOW_DIMENSIONS.reduce<FlowAnalysis>(
     (accumulator, dimension) => {
       const all = state[dimension].messages;
-      const messages = all.length > 0 ? all.slice(0, maxPerDimension[dimension]) : [getFlowFallback(dimension, ganZhi, levelLabel)];
+      const messages = all.length > 0 ? all.slice(0, maxPerDimension[dimension]) : [];
       accumulator[dimension] = {
         tone: classifyTone(state[dimension].score),
         summary: messages
