@@ -263,10 +263,8 @@ export function buildNarrativeAnalysis(args: {
     shenSha
   } = args;
 
+  // 概述只保留综合判断，不重复基本信息卡片中的日主/五行/十神/起运等原始数据。
   const overview: string[] = [];
-  overview.push(`日主为${dayMaster.value}${dayMaster.element}，属于${dayMaster.yinYang}性之主，旺衰层级为${strength.level}。`);
-  overview.push(...elementBalance.observations);
-  overview.push(...tenGodDistribution.observations);
   overview.push(
     `格局定为${pattern.name}（${pattern.category}），以${pattern.governingTenGod}为纲，当前判断倾向${pattern.outcome}。`
   );
@@ -275,7 +273,9 @@ export function buildNarrativeAnalysis(args: {
       yongShen.jiShen.length > 0 ? yongShen.jiShen.join("、") : "不明显"
     }。`
   );
-  overview.push(`大运按${direction === "forward" ? "顺行" : "逆行"}展开，起运公历时间为${startSolar}。`);
+  if (strength.level === "中和") {
+    overview.push("日主中和，扶抑之力大致平衡，需结合格局与用神再定取舍。");
+  }
 
   const career: string[] = [];
   const wealth: string[] = [];
@@ -302,15 +302,11 @@ export function buildNarrativeAnalysis(args: {
   if (outputScore >= 3) {
     career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
   }
-  career.push(
-    `就格局而言，本命定为${pattern.name}，${
-      pattern.outcome === "成格"
-        ? "结构相对清纯，事业发展更宜顺势强化该格局对应的优势领域。"
-        : pattern.outcome === "败格"
-          ? "存在破格信号，事业上更需要靠后天努力和大运补位来化解结构性短板。"
-          : "成败尚待大运流年进一步验证，暂以稳健积累为主。"
-    }`
-  );
+  if (pattern.outcome === "成格") {
+    career.push("格局清纯，事业发展宜顺势强化优势领域。");
+  } else if (pattern.outcome === "败格") {
+    career.push("存在破格信号，事业上更需靠后天努力和大运补位。");
+  }
   if (yongShen.yongShen.includes(dayMaster.element) || peerScore >= 3) {
     career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
   }
@@ -369,9 +365,7 @@ export function buildNarrativeAnalysis(args: {
   const strongest = elementBalance.strongest.join("、");
   const weakest = elementBalance.weakest.join("、");
   health.push(`健康观察上，先看${strongest}偏盛与${weakest}偏弱对应的寒热燥湿失衡。`);
-  if (elementBalance.strongest.length === 1 && elementBalance.weakest.length === 1) {
-    health.push("后续如果做更细报告，可以把体感与作息问题映射到对应五行系统继续展开。");
-  }
+
   if (strength.level === "身极弱" || strength.level === "身弱") {
     health.push("日主偏弱，整体抗压耐受度相对有限，作息规律和体力储备上更需要留有余量。");
   } else if (strength.level === "身旺" || strength.level === "身强") {
