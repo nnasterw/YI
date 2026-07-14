@@ -729,86 +729,34 @@ export function buildFlowAnalysis(args: {
       break;
   }
 
+  // 五行天干信号仅注册到 signals 列表（供展示），不再推送维度 messages。
+  // 因为上面的十神信号已基于 isStrong 对同一关系做了完整的维度分析和评分，
+  // 重复推送会造成同一信息以两种措辞出现在 summary 中。
   const stemInteraction = getElementInteraction(dayMaster.element, STEM_META[flowStem].element);
-  switch (stemInteraction) {
-    case "generated-by":
-      registerSignal(
-        {
-          category: "element",
-          type: "生我",
-          tone: "supportive",
-          description: `${levelLabel}天干${flowStem}五行对日主形成“生我”关系。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}天干生扶日主，阶段支持度更高。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}有外部支持或资源补给，更利于稳中推进。` },
-          { dimension: "health", delta: 1, message: `${levelLabel}生扶关系有利于恢复与续航。` }
-        ]
-      );
-      break;
-    case "generate":
-      registerSignal(
-        {
-          category: "element",
-          type: "我生",
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}五行对日主形成“我生”关系。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}以输出换结果，收获与消耗会并行出现。` },
-          { dimension: "career", delta: 1, message: `${levelLabel}更适合把想法、作品或表达推到台前。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}输出过度时要防精力被持续抽走。` }
-        ]
-      );
-      break;
-    case "control":
-      registerSignal(
-        {
-          category: "element",
-          type: "我克",
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}五行对日主形成“我克”关系。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}更像主动拿结果的阶段，但也需要消耗换取。` },
-          { dimension: "wealth", delta: 1, message: `${levelLabel}我克为财，财务与资源主题更容易被拉出来处理。` }
-        ]
-      );
-      break;
-    case "controlled-by":
-      registerSignal(
-        {
-          category: "element",
-          type: "克我",
-          tone: "challenging",
-          description: `${levelLabel}天干${flowStem}五行对日主形成“克我”关系。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: -1, message: `${levelLabel}克我之力增强，阶段压力和被要求感更明显。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}克我过强时，更要防疲劳、焦虑和恢复不足。` }
-        ]
-      );
-      break;
-    case "same":
-      registerSignal(
-        {
-          category: "element",
-          type: "同气",
-          tone: "mixed",
-          description: `${levelLabel}天干${flowStem}与日主同气，同类力量增强。`,
-          members: [dayMaster.value, flowStem]
-        },
-        [
-          { dimension: "overall", delta: 0, message: `${levelLabel}同气增强，自我意志与同类能量都会抬头。` }
-        ]
-      );
-      break;
+  const stemElementTypeLabels: Record<string, string> = {
+    "generated-by": "生我",
+    "generate": "我生",
+    "control": "我克",
+    "controlled-by": "克我",
+    "same": "同气"
+  };
+  const stemElementTones: Record<string, AnalysisTone> = {
+    "generated-by": "supportive",
+    "generate": "mixed",
+    "control": "mixed",
+    "controlled-by": "challenging",
+    "same": "mixed"
+  };
+  if (stemElementTypeLabels[stemInteraction]) {
+    pushSignal(signals, seen, {
+      category: "element",
+      type: stemElementTypeLabels[stemInteraction],
+      tone: stemElementTones[stemInteraction],
+      description: `${levelLabel}天干${flowStem}五行对日主形成"${stemElementTypeLabels[stemInteraction]}"关系。`,
+      members: [dayMaster.value, flowStem]
+    });
   }
-
+  // 地支五行信号：只保留 overall 一条消息，health 维度交给后续地支关系信号处理
   const branchInteraction = getElementInteraction(dayMaster.element, BRANCH_META[flowBranch].element);
   if (branchInteraction === "controlled-by") {
     registerSignal(
@@ -820,8 +768,7 @@ export function buildFlowAnalysis(args: {
         members: [dayMaster.value, flowBranch]
       },
       [
-        { dimension: "health", delta: -1, message: `${levelLabel}地支之气对日主形成压力，体感波动更值得留神。` },
-        { dimension: "overall", delta: -1, message: `${levelLabel}地支层面的压力更偏底层和环境式。` }
+        { dimension: "overall", delta: -1, message: `${levelLabel}地支层面形成压力，体感波动更值得留神。` }
       ]
     );
   } else if (branchInteraction === "generated-by") {
@@ -834,8 +781,7 @@ export function buildFlowAnalysis(args: {
         members: [dayMaster.value, flowBranch]
       },
       [
-        { dimension: "overall", delta: 1, message: `${levelLabel}地支生扶日主，底层环境更容易出现托举。` },
-        { dimension: "health", delta: 1, message: `${levelLabel}地支生扶有利于状态回暖和恢复节律。` }
+        { dimension: "overall", delta: 1, message: `${levelLabel}地支生扶日主，底层环境容易出现托举。` }
       ]
     );
   }
@@ -1004,29 +950,15 @@ export function buildFlowAnalysis(args: {
     }
   }
 
-  // v2 身旺身弱校正：调整整体分数
+  // v2 身旺身弱校正：仅调整 overall 分数，不再推送重复消息。
+  // 十神信号已基于 isStrong 对同一关系给出完整描述，此处重复推送会造成冗余。
   const flowStemElement = STEM_META[flowStem].element;
   const stemInteractionType = getElementInteraction(dayMaster.element, flowStemElement);
   if (isStrong) {
-    if (stemInteractionType === "generated-by") {
+    if (stemInteractionType === "generated-by" || stemInteractionType === "same") {
       state.overall.score -= 2;
-      if (!state.overall.messages.some(m => m.includes("身旺忌印"))) {
-        state.overall.messages.push(`身旺忌印——${levelLabel}天干${flowStem}印星生身反为忌，不宜过度依赖外部支持。`);
-      }
-    } else if (stemInteractionType === "same") {
-      state.overall.score -= 2;
-      if (!state.overall.messages.some(m => m.includes("身旺忌比"))) {
-        state.overall.messages.push(`身旺忌比——${levelLabel}天干${flowStem}比劫帮身过旺，竞争加剧、破财风险增加。`);
-      }
-    } else if (stemInteractionType === "generate") {
+    } else if (stemInteractionType === "generate" || stemInteractionType === "control" || stemInteractionType === "controlled-by") {
       state.overall.score += 1;
-    } else if (stemInteractionType === "control") {
-      state.overall.score += 1;
-    } else if (stemInteractionType === "controlled-by") {
-      state.overall.score += 1;
-      if (!state.overall.messages.some(m => m.includes("身旺喜克"))) {
-        state.overall.messages.push(`身旺喜克——${levelLabel}天干${flowStem}官杀克身，恰好制衡过旺日主，整体趋于平稳。`);
-      }
     }
   } else {
     if (stemInteractionType === "generated-by" || stemInteractionType === "same") {
@@ -1035,18 +967,23 @@ export function buildFlowAnalysis(args: {
       state.overall.score -= 1;
     } else if (stemInteractionType === "controlled-by") {
       state.overall.score -= 2;
-      if (!state.overall.messages.some(m => m.includes("身弱忌官杀"))) {
-        state.overall.messages.push(`身弱忌官杀——${levelLabel}天干${flowStem}官杀克身，日主本已偏弱，此运/年压力感更明显。`);
-      }
     }
   }
 
+  // 每个维度 summary 限量：overall 最多 3 条，其他维度最多 2 条。
+  // 过多同义模板句会让报告冗长且缺乏重点。
+  const maxPerDimension: Record<FlowDimensionKey, number> = {
+    overall: 3,
+    career: 2,
+    relationships: 2,
+    health: 2,
+    wealth: 2
+  };
+
   const summaries = FLOW_DIMENSIONS.reduce<FlowAnalysis>(
     (accumulator, dimension) => {
-      const messages =
-        state[dimension].messages.length > 0
-          ? state[dimension].messages
-          : [FLOW_FALLBACK[dimension]];
+      const all = state[dimension].messages;
+      const messages = all.length > 0 ? all.slice(0, maxPerDimension[dimension]) : [FLOW_FALLBACK[dimension]];
       accumulator[dimension] = {
         tone: classifyTone(state[dimension].score),
         summary: messages

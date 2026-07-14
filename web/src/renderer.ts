@@ -281,6 +281,10 @@ function renderFavorable(dayElement: Element, favorable: FavorableElements, isSt
     [getGeneratingElement(dayElement)]: "印星（生我）",
     [dayElement]: "比劫（帮我）"
   };
+  const directionMap: Record<string, string> = { "木": "东方", "火": "南方", "土": "中央", "金": "西方", "水": "北方" };
+  const colorMap: Record<string, string> = { "木": "绿/青", "火": "红/紫/橙", "土": "黄/棕", "金": "白/银/金", "水": "黑/蓝" };
+  const industryMap: Record<string, string> = { "木": "教育/法律/环保/出版", "火": "科技/能源/餐饮/传媒", "土": "房地产/建筑/农业", "金": "金融/制造/IT/刀笔", "水": "物流/旅游/贸易/水产" };
+  const numberMap: Record<string, string> = { "木": "3、8", "火": "2、7", "土": "5、0", "金": "4、9", "水": "1、6" };
 
   const allElements = [...favorable.most, ...favorable.good, ...favorable.neutral, ...favorable.bad, ...favorable.worst];
   const levelMap = new Map<string, string>();
@@ -293,7 +297,7 @@ function renderFavorable(dayElement: Element, favorable: FavorableElements, isSt
   const rows = allElements.map(el => {
     const level = levelMap.get(el) || "中";
     const cls = level.includes("喜") || level === "最喜" ? "fav-good" : level.includes("忌") ? "fav-bad" : "fav-mid";
-    return `<tr class="${cls}"><td>${level}</td><td>${elSpan(el)}</td><td>${tenGodMap[el] || ""}</td><td>${isStrong ? "泄/耗/克" : "生/帮"}所需</td></tr>`;
+    return `<tr class="${cls}"><td>${level}</td><td>${elSpan(el)}</td><td>${tenGodMap[el] || ""}</td><td>${colorMap[el]}</td><td>${directionMap[el]}</td><td>${numberMap[el]}</td><td>${industryMap[el]}</td></tr>`;
   }).join("");
 
   return `
@@ -301,7 +305,7 @@ function renderFavorable(dayElement: Element, favorable: FavorableElements, isSt
       <h2>喜忌用神</h2>
       <p>身${isStrong ? "旺" : "弱"}取用：${isStrong ? "需泄（食伤）、耗（财星）、克（官杀）" : "需生（印星）、帮（比劫）"}</p>
       <table class="fav-table">
-        <tr><th>喜忌</th><th>五行</th><th>十神</th><th>原因</th></tr>
+        <tr><th>喜忌</th><th>五行</th><th>十神</th><th>颜色</th><th>方位</th><th>数字</th><th>行业</th></tr>
         ${rows}
       </table>
     </div>`;
@@ -394,6 +398,7 @@ function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isS
   const monthBranch = profile.chart.pillars[1].branch.value;
   const rows = lc.cycles.map(c => {
     const corrected = computeCorrectedTone(c.ganZhi, dayElement, isStrong, monthBranch, c.analysis);
+    const layers = analyzeLuckCycleLayers(c.ganZhi, profile.chart.dayMaster, isStrong);
     return `
     <tr>
       <td>${c.index}</td>
@@ -405,6 +410,8 @@ function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isS
       <td>${toneLabel(c.analysis.relationships.tone)}</td>
       <td>${toneLabel(c.analysis.health.tone)}</td>
       <td>${toneLabel(c.analysis.wealth.tone)}</td>
+      <td class="${layers.stemIsPositive ? 'check-pass' : 'tone-bad'}">${layers.stemTenGod}</td>
+      <td class="${layers.branchIsPositive ? 'check-pass' : 'tone-bad'}">${layers.branchElement}</td>
     </tr>`;
   }).join("");
 
@@ -412,8 +419,9 @@ function renderLuckCyclesOverview(profile: BaziProfile, dayElement: Element, isS
     <div class="card">
       <h2>大运总览</h2>
       <p>起运：${lc.startSolar}（${lc.startOffset.years}年${lc.startOffset.months}月${lc.startOffset.days}日）| 方向：${lc.direction === "forward" ? "顺行" : "逆行"}</p>
+      <p class="hint">天干主前5年（明面主题），地支主后5年（底层环境）。</p>
       <table class="luck-table">
-        <tr><th>运</th><th>干支</th><th>年龄</th><th>年份</th><th>整体</th><th>事业</th><th>感情</th><th>健康</th><th>财富</th></tr>
+        <tr><th>运</th><th>干支</th><th>年龄</th><th>年份</th><th>整体</th><th>事业</th><th>感情</th><th>健康</th><th>财富</th><th>干(前5年)</th><th>支(后5年)</th></tr>
         ${rows}
       </table>
     </div>`;
@@ -792,8 +800,6 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
         <tr><td>学习方式</td><td>${shiShang >= biJie ? "动手型——做中学最快" : yinXing >= 2 ? "吸收型——读书听课效率高" : "混合型"}</td><td>${shiShang >= biJie ? "食伤≥比劫 → 输出即学习" : yinXing >= 2 ? "印星≥2 → 被动接收型" : "均衡分布"}</td></tr>
         <tr><td>社交风格</td><td>${biJie >= 3 ? "少而精，重质不重量" : caiXing >= 3 ? "广而浅，资源型社交" : "选择性社交"}</td><td>${biJie >= 3 ? "比劫≥3 → 独立型社交" : caiXing >= 3 ? "财星≥3 → 经营型社交" : "无极端偏向"}</td></tr>
         <tr><td>消费偏好</td><td>${shiShang >= 2 ? "追求品质和体验" : caiXing >= 3 ? "注重性价比和回报" : "量入为出"}</td><td>${shiShang >= 2 ? "食伤旺 → 品质导向" : caiXing >= 3 ? "财星旺 → 投资导向" : "中性"}</td></tr>
-        <tr><td>适合方向</td><td>${[...favorable.most, ...favorable.good].map(e => elSpan(e)).join(" ")} 相关</td><td>喜用神五行 → 对应行业和环境</td></tr>
-        <tr><td>颜色方位</td><td>${[...favorable.most, ...favorable.good].map(e => `<span style="color:${ELEMENT_COLOR[e]}">${e}</span>`).join(" ")} / ${[...favorable.most, ...favorable.good].map(e => ({"木":"东","火":"南","土":"中","金":"西","水":"北"}[e])).join("")}</td><td>喜用五行 → 对应颜色和方位</td></tr>
       </table>
     </div>`;
 
@@ -821,29 +827,6 @@ function renderPersonality(profile: BaziProfile, scores: ElementScores, favorabl
 
       ${detailSections.join("")}
       ${prefSections}
-    </div>`;
-}
-
-function renderLifetimeLookup(dayElement: Element, favorable: FavorableElements): string {
-  const directionMap: Record<string, string> = { "木": "东方", "火": "南方", "土": "中央", "金": "西方", "水": "北方" };
-  const colorMap: Record<string, string> = { "木": "绿/青", "火": "红/紫/橙", "土": "黄/棕", "金": "白/银/金", "水": "黑/蓝" };
-  const industryMap: Record<string, string> = { "木": "教育/法律/环保/出版", "火": "科技/能源/餐饮/传媒", "土": "房地产/建筑/农业", "金": "金融/制造/IT/刀笔", "水": "物流/旅游/贸易/水产" };
-  const numberMap: Record<string, string> = { "木": "3、8", "火": "2、7", "土": "5、0", "金": "4、9", "水": "1、6" };
-
-  const allEls = [...favorable.most, ...favorable.good, ...favorable.neutral, ...favorable.bad, ...favorable.worst];
-  const rows = allEls.map(el => {
-    const level = favorable.most.includes(el) ? "最喜" : favorable.good.includes(el) ? "喜" : favorable.bad.includes(el) ? "忌" : favorable.worst.includes(el) ? "大忌" : "中";
-    const cls = level.includes("喜") || level === "最喜" ? "fav-good" : level.includes("忌") ? "fav-bad" : "";
-    return `<tr class="${cls}"><td>${level}</td><td>${elSpan(el)}</td><td>${colorMap[el]}</td><td>${directionMap[el]}</td><td>${numberMap[el]}</td><td>${industryMap[el]}</td></tr>`;
-  }).join("");
-
-  return `
-    <div class="card">
-      <h2>终生喜忌速查</h2>
-      <table class="lookup-table">
-        <tr><th>喜忌</th><th>五行</th><th>颜色</th><th>方位</th><th>数字</th><th>行业</th></tr>
-        ${rows}
-      </table>
     </div>`;
 }
 
@@ -944,31 +927,6 @@ function renderElementFlow(chains: ElementFlowChain[]): string {
     </div>`;
 }
 
-function renderLuckCycleLayered(profile: BaziProfile, isStrong: boolean): string {
-  const rows = profile.luckCycles.cycles.map(c => {
-    const layers = analyzeLuckCycleLayers(c.ganZhi, profile.chart.dayMaster, isStrong);
-    return `
-      <tr>
-        <td>${c.index}</td>
-        <td class="ganzhi">${c.ganZhi}</td>
-        <td>${c.startAge}-${c.endAge}</td>
-        <td class="${layers.stemIsPositive ? 'check-pass' : 'tone-bad'}">${layers.stemTenGod}(${layers.stemElement})</td>
-        <td class="${layers.branchIsPositive ? 'check-pass' : 'tone-bad'}">${layers.branchElement}</td>
-        <td style="font-size:0.8rem">${layers.stemAnalysis}</td>
-      </tr>`;
-  }).join("");
-
-  return `
-    <div class="card">
-      <h2>大运分层分析</h2>
-      <p class="hint">天干主前5年（明面主题），地支主后5年（底层环境）。透出力量 &gt; 暗藏力量。</p>
-      <table class="luck-table">
-        <tr><th>运</th><th>干支</th><th>年龄</th><th>天干(前5年)</th><th>地支(后5年)</th><th>分析</th></tr>
-        ${rows}
-      </table>
-    </div>`;
-}
-
 function renderPortrait(profile: BaziProfile, scores: ElementScores, combos: TenGodCombination[]): string {
   const dm = profile.chart.dayMaster;
   const diShi = profile.chart.pillars[2].diShi;
@@ -981,9 +939,8 @@ function renderPortrait(profile: BaziProfile, scores: ElementScores, combos: Ten
   const comboNames = combos.map(c => c.type).join("、");
   const clashes = profile.relations.filter(r => ["六冲","六害","相刑"].includes(r.type));
 
-  const portrait = scores.isStrong
-    ? `${dm.value}${dm.element}身旺——${symbol}之象。内在能量充沛，自信到固执的程度。坐${diShi}位，根基极稳。`
-    : `${dm.value}${dm.element}身弱——${symbol}之象。柔韧善借力，需要外部支持才能发挥最大价值。`;
+  // 日主符号和身旺身弱详情由 renderPersonality 展开，此处只做一句话概括。
+  const portrait = `${dm.value}${dm.element} · ${profile.strength.level} · ${symbol} · 坐${diShi}位`;
 
   const dynamicDesc = clashes.length >= 2
     ? "命盘动态极强——冲合交织，一生闲不住，变动多、经历多。"
@@ -1184,13 +1141,11 @@ export function renderReport(profile: BaziProfile): string {
     // === 第四区：运势时间线 ===
     renderLifeRhythm(profile, scores.isStrong),
     renderKeyYears(profile, dayElement, scores.isStrong),
-    renderLuckCycleLayered(profile, scores.isStrong),
     renderLuckCyclesOverview(profile, dayElement, scores.isStrong),
     renderLuckCycleDetails(profile, dayElement, scores.isStrong),
 
     // === 第五区：速查 ===
     renderTenGods(profile),
     renderRelations(profile),
-    renderLifetimeLookup(dayElement, favorable)
   ].join("");
 }
