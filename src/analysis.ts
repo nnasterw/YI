@@ -32,13 +32,16 @@ const DIMENSION_FALLBACK = {
   wealth: "财富维度建议结合财星来源、比劫分财和大运触发一起判断。"
 } as const;
 
-const FLOW_FALLBACK = {
-  overall: "该阶段的流运信号较为均衡，宜把它视为趋势提示而不是单点结论。",
-  career: "事业维度以阶段性变化为主，建议结合现实项目与职位节点一起观察。",
-  relationships: "关系维度暂无单一强信号，更适合结合沟通节奏和现实互动判断。",
-  health: "健康维度暂无强烈单点信号，适合重点观察作息、压力与体感变化。",
-  wealth: "财富维度暂无单一强信号，建议重点看现金流、合作分配与支出结构。"
-} as const;
+function getFlowFallback(dimension: FlowDimensionKey, ganZhi: string, levelLabel: string): string {
+  const fallbacks: Record<FlowDimensionKey, string> = {
+    overall: `${levelLabel}${ganZhi}流运信号较为均衡，宜视为趋势提示而非单点结论。`,
+    career: `${levelLabel}${ganZhi}事业维度以阶段性变化为主，建议结合现实项目与职位节点观察。`,
+    relationships: `${levelLabel}${ganZhi}关系维度暂无单一强信号，更适合结合沟通节奏和现实互动判断。`,
+    health: `${levelLabel}${ganZhi}健康维度暂无强烈单点信号，适合重点观察作息、压力与体感变化。`,
+    wealth: `${levelLabel}${ganZhi}财富维度暂无单一强信号，建议重点看现金流、合作分配与支出结构。`
+  };
+  return fallbacks[dimension];
+}
 
 const FLOW_DIMENSIONS = ["overall", "career", "relationships", "health", "wealth"] as const;
 type FlowDimensionKey = (typeof FLOW_DIMENSIONS)[number];
@@ -617,10 +620,10 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 1, message: `${levelLabel}身强伤官当令，适合突破创新，泄秀有度反成动力。` },
-            { dimension: "career", delta: 1, message: `${levelLabel}伤官更利创新表达，身强时敢于打破僵化体系、另辟蹊径。` },
-            { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
-            { dimension: "health", delta: -1, message: `${levelLabel}伤官阶段常伴随消耗、熬夜或情绪外放。` }
+            { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}伤官当令，身强适合突破创新，泄秀有度反成动力。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}${flowStem}伤官利创新表达，身强时敢于打破僵化体系、另辟蹊径。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}${flowStem}伤官偏强时，说话方式和边界感更需要克制。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}${flowStem}伤官阶段常伴随消耗、熬夜或情绪外放。` }
           ]
         );
       } else {
@@ -634,9 +637,9 @@ export function buildFlowAnalysis(args: {
           },
           [
             { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}伤官透出，身弱逢之，泄气叠加冲劲外放，容易身心俱疲又招惹是非。` },
-            { dimension: "career", delta: -1, message: `${levelLabel}伤官不服管束，身弱时更难扛住规则摩擦带来的消耗。` },
-            { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
-            { dimension: "health", delta: -2, message: `${levelLabel}身弱伤官双重泄耗，熬夜、情绪外放对身心影响更明显。` }
+            { dimension: "career", delta: -1, message: `${levelLabel}${flowStem}伤官不服管束，身弱时更难扛住规则摩擦带来的消耗。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}${flowStem}伤官偏强时，说话方式和边界感更需要克制。` },
+            { dimension: "health", delta: -2, message: `${levelLabel}${flowStem}身弱伤官双重泄耗，熬夜、情绪外放对身心影响更明显。` }
           ]
         );
       }
@@ -653,9 +656,9 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -1, message: `${levelLabel}身旺逢印，精力过剩但缺乏有效出口，容易陷入空想。` },
-            { dimension: "career", delta: 0, message: `${levelLabel}印星对身旺者利学习但不利决断——适合充电不适合冲锋。` },
-            { dimension: "wealth", delta: -1, message: `${levelLabel}印星克制食伤（泄秀通道被堵），变现能力受限。` }
+            { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}印星对身旺者精力过剩但缺乏有效出口，容易陷入空想。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}${flowStem}印星利学习但不利决断，适合充电不适合冲锋。` },
+            { dimension: "wealth", delta: -1, message: `${levelLabel}${flowStem}印星克制食伤（泄秀通道被堵），变现能力受限。` }
           ]
         );
       } else {
@@ -688,13 +691,13 @@ export function buildFlowAnalysis(args: {
         },
         isStrong
           ? [
-              { dimension: "overall", delta: -1, message: `${levelLabel}身旺逢比肩，固执和竞争心加倍，容易一意孤行。` },
-              { dimension: "wealth", delta: -2, message: `${levelLabel}比肩夺财——合伙分利、借钱不还、投资被分摊的风险高。` },
-              { dimension: "relationships", delta: -1, message: `${levelLabel}比肩强化自我立场，关系里更要注意互相让位。` }
+              { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}比肩加身旺，固执和竞争心加倍，容易一意孤行。` },
+              { dimension: "wealth", delta: -2, message: `${levelLabel}${flowStem}比肩夺财——合伙分利、借钱不还、投资被分摊的风险高。` },
+              { dimension: "relationships", delta: -1, message: `${levelLabel}${flowStem}比肩强化自我立场，关系里更要注意互相让位。` }
             ]
           : [
               { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}比肩透出，信心和行动力增强。` },
-              { dimension: "career", delta: 1, message: `${levelLabel}有同类支持，适合合作和团队推进。` }
+              { dimension: "career", delta: 1, message: `${levelLabel}${flowStem}比肩透出，有同类支持，适合合作和团队推进。` }
             ]
       );
       break;
@@ -711,13 +714,13 @@ export function buildFlowAnalysis(args: {
         },
         isStrong
           ? [
-              { dimension: "overall", delta: -2, message: `${levelLabel}身旺逢劫财，过旺之势加剧——独断、冲动、与人争利。` },
-              { dimension: "wealth", delta: -3, message: `${levelLabel}劫财夺财——这是最容易破财的年份。不借钱、不担保、不冲动投资。` },
-              { dimension: "relationships", delta: -1, message: `${levelLabel}劫财阶段更容易因边界与利益问题产生摩擦。` }
+              { dimension: "overall", delta: -2, message: `${levelLabel}${flowStem}劫财加身旺，过旺之势加剧——独断、冲动、与人争利。` },
+              { dimension: "wealth", delta: -3, message: `${levelLabel}${flowStem}劫财夺财——最容易破财的年份。不借钱、不担保、不冲动投资。` },
+              { dimension: "relationships", delta: -1, message: `${levelLabel}${flowStem}劫财阶段更容易因边界与利益问题产生摩擦。` }
             ]
           : [
               { dimension: "overall", delta: 0, message: `${levelLabel}${flowStem}劫财透出，帮身但也争财，得失参半。` },
-              { dimension: "wealth", delta: -1, message: `${levelLabel}劫财仍有夺财之性，财务上需注意。` }
+              { dimension: "wealth", delta: -1, message: `${levelLabel}${flowStem}劫财仍有夺财之性，财务上需注意。` }
             ]
       );
       break;
@@ -799,7 +802,7 @@ export function buildFlowAnalysis(args: {
         [
           { dimension: "overall", delta: 1, message: `${levelLabel}地支${flowBranch}合${natalBranch}，事情更容易被牵动、撮合或整合。` },
           { dimension: "relationships", delta: 2, message: `${levelLabel}${flowBranch}${natalBranch}合，关系互动和协商空间更大。` },
-          { dimension: "wealth", delta: 1, message: `${levelLabel}合局利于合作、撮合资源与交易达成。` }
+          { dimension: "wealth", delta: 1, message: `${levelLabel}${flowBranch}${natalBranch}合局，合作、撮合与交易达成更顺畅。` }
         ]
       );
     }
@@ -815,13 +818,13 @@ export function buildFlowAnalysis(args: {
         },
         [
           { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}冲${natalBranch}，阶段更容易出现变动、对冲和突发调整。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}冲局容易带来节律打乱、奔波或身心紧张。` },
+          { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}冲${natalBranch}，节律打乱、奔波或身心紧张。` },
           ...(natalDayBranch === natalBranch
             ? [
                 {
                   dimension: "relationships" as const,
                   delta: -2,
-                  message: `${levelLabel}冲到日支，关系与亲密互动的波动会更明显。`
+                  message: `${levelLabel}${flowBranch}冲到日支${natalBranch}，关系与亲密互动的波动会更明显。`
                 }
               ]
             : [])
@@ -840,8 +843,8 @@ export function buildFlowAnalysis(args: {
         },
         [
           { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}害${natalBranch}，偏向暗耗和不顺，很多问题会慢慢显形。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}害局常对应误解、别扭或暗中消耗。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}害局阶段也要防止情绪郁结转成体感问题。` }
+          { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，容易产生误解、别扭或暗中消耗。` },
+          { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，注意情绪郁结转成体感问题。` }
         ]
       );
     }
@@ -857,8 +860,8 @@ export function buildFlowAnalysis(args: {
         },
         [
           { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}刑${natalBranch}，阶段更容易出现拧巴、反复或内耗。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}刑局更需要处理边界、情绪和语言方式。` },
-          { dimension: "health", delta: -2, message: `${levelLabel}刑象较重时，要重点看压力累积和身体警讯。` }
+          { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}刑${natalBranch}，需留意边界、情绪和语言方式。` },
+          { dimension: "health", delta: -2, message: `${levelLabel}${flowBranch}刑${natalBranch}，重点留意压力累积和身体警讯。` }
         ]
       );
     }
@@ -876,9 +879,9 @@ export function buildFlowAnalysis(args: {
       },
       [
         { dimension: "overall", delta: 1, message: `${levelLabel}${triple.type}成局，阶段主题会更集中地被放大。` },
-        { dimension: "career", delta: 1, message: `${levelLabel}${triple.type}成局时，事业推进往往更有整体联动感。` },
-        { dimension: "relationships", delta: 1, message: `${levelLabel}${triple.type}也会放大人际与关系联结。` },
-        { dimension: "wealth", delta: 1, message: `${levelLabel}${triple.type}利于资源会聚与结果聚焦。` }
+        { dimension: "career", delta: 1, message: `${levelLabel}${triple.members.join("")}${triple.type}成局，事业推进更有整体联动感。` },
+        { dimension: "relationships", delta: 1, message: `${levelLabel}${triple.members.join("")}${triple.type}放大人际与关系联结。` },
+        { dimension: "wealth", delta: 1, message: `${levelLabel}${triple.members.join("")}${triple.type}利资源会聚与结果聚焦。` }
       ]
     );
   }
@@ -896,7 +899,7 @@ export function buildFlowAnalysis(args: {
       },
       [
         { dimension: "overall", delta: 1, message: `${levelLabel}${half.result}气半合初现，阶段主题有所呼应但尚未完全成局。` },
-        { dimension: "wealth", delta: 1, message: `${levelLabel}半合带来局部资源联动，机会零散但仍值得留意。` }
+        { dimension: "wealth", delta: 1, message: `${levelLabel}${half.members.join("")}半合${half.result}，局部资源联动，机会零散但值得留意。` }
       ]
     );
   }
@@ -920,24 +923,24 @@ export function buildFlowAnalysis(args: {
               {
                 dimension: "overall",
                 delta: 1,
-                message: "流年与所属大运同频，阶段主题更容易被持续放大。"
+                message: `流年${flowBranch}与大运${parentBranch}同频，阶段主题更容易被持续放大。`
               },
               {
                 dimension: "career",
                 delta: 1,
-                message: "流年与大运相合时，事业节奏更容易连成线。"
+                message: `流年${flowBranch}合大运${parentBranch}，事业节奏更容易连成线。`
               }
             ]
           : [
               {
                 dimension: "overall",
                 delta: -1,
-                message: "流年与所属大运有对冲，阶段主题会更容易出现转折和波动。"
+                message: `流年${flowBranch}冲大运${parentBranch}，阶段主题更容易出现转折和波动。`
               },
               {
                 dimension: "health",
                 delta: -1,
-                message: "流年与大运冲刑时，身心承压感通常更直观。"
+                message: `流年${flowBranch}与大运${parentBranch}冲刑，身心承压感通常更直观。`
               }
             ]
       );
@@ -977,7 +980,7 @@ export function buildFlowAnalysis(args: {
   const summaries = FLOW_DIMENSIONS.reduce<FlowAnalysis>(
     (accumulator, dimension) => {
       const all = state[dimension].messages;
-      const messages = all.length > 0 ? all.slice(0, maxPerDimension[dimension]) : [FLOW_FALLBACK[dimension]];
+      const messages = all.length > 0 ? all.slice(0, maxPerDimension[dimension]) : [getFlowFallback(dimension, ganZhi, levelLabel)];
       accumulator[dimension] = {
         tone: classifyTone(state[dimension].score),
         summary: messages
