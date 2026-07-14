@@ -427,14 +427,14 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 2, message: `${levelLabel}身强逢正官，克泄有度，阶段节奏更容易稳中有进。` },
-            { dimension: "career", delta: 2, message: `${levelLabel}正官到位，事业上更利于职责明确、晋升考核或身份建立。` },
+            { dimension: "overall", delta: 2, message: `${levelLabel}${flowStem}正官透出，身强逢之，克泄有度，阶段节奏更容易稳中有进。` },
+            { dimension: "career", delta: 2, message: `${levelLabel}${flowStem}正官到位，事业上更利于职责明确、晋升考核或身份建立。` },
             ...(gender === "female"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: 1,
-                    message: `${levelLabel}官星对女命也常会带来关系议题的强化。`
+                    message: `${levelLabel}${flowStem}官星对女命也常会带来关系议题的强化。`
                   }
                 ]
               : [])
@@ -450,14 +450,14 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢正官，克身之力叠加，节奏容易被外部要求压得偏紧。` },
-            { dimension: "career", delta: 0, message: `${levelLabel}正官阶段责任加重，身弱时更需量力而行，避免硬扛。` },
+            { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}正官透出，身弱逢之，克身之力叠加，节奏容易被外部要求压得偏紧。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}${flowStem}正官阶段责任加重，身弱时更需量力而行，避免硬扛。` },
             ...(gender === "female"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: -1,
-                    message: `${levelLabel}身弱逢官星，关系中承受的压力感也会更明显。`
+                    message: `${levelLabel}${flowStem}官星透出，身弱逢之，关系中承受的压力感也会更明显。`
                   }
                 ]
               : [])
@@ -476,15 +476,15 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 1, message: `${levelLabel}身强逢七杀，克泄之力恰能中和过旺之气，敢打硬仗。` },
-            { dimension: "career", delta: 2, message: `${levelLabel}七杀化为权柄，适合承担高压任务、竞争性强的项目。` },
-            { dimension: "health", delta: -1, message: `${levelLabel}七杀偏重时，身心负荷和紧绷感仍需留意。` },
+            { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}七杀透出，身强逢之，克泄之力恰能中和过旺之气，敢打硬仗。` },
+            { dimension: "career", delta: 2, message: `${levelLabel}${flowStem}七杀化为权柄，适合承担高压任务、竞争性强的项目。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}${flowStem}七杀偏重时，身心负荷和紧绷感仍需留意。` },
             ...(gender === "female"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: 0,
-                    message: `${levelLabel}七杀对关系也可能带来压迫感或强刺激。`
+                    message: `${levelLabel}${flowStem}七杀对关系也可能带来压迫感或强刺激。`
                   }
                 ]
               : [])
@@ -500,15 +500,15 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -2, message: `${levelLabel}身弱逢七杀，克身之力过重，容易身心俱疲、进退两难。` },
-            { dimension: "career", delta: -1, message: `${levelLabel}七杀高压叠加身弱，硬扛风险大，更需借外力或印星化解。` },
-            { dimension: "health", delta: -2, message: `${levelLabel}七杀偏重且日主本弱，身心负荷和紧绷感要重点留意。` },
+            { dimension: "overall", delta: -2, message: `${levelLabel}${flowStem}七杀透出，身弱逢之，克身之力过重，容易身心俱疲、进退两难。` },
+            { dimension: "career", delta: -1, message: `${levelLabel}${flowStem}七杀高压叠加身弱，硬扛风险大，更需借外力或印星化解。` },
+            { dimension: "health", delta: -2, message: `${levelLabel}${flowStem}七杀偏重且日主本弱，身心负荷和紧绷感要重点留意。` },
             ...(gender === "female"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: -1,
-                    message: `${levelLabel}七杀对关系也可能带来压迫感或强刺激。`
+                    message: `${levelLabel}${flowStem}七杀对关系也可能带来压迫感或强刺激。`
                   }
                 ]
               : [])
@@ -529,15 +529,15 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 1, message: `${levelLabel}身强逢财，更容易把注意力拉向资源和结果并转化为收获。` },
-            { dimension: "career", delta: 1, message: `${levelLabel}财星阶段更利于项目落地、客户经营和资源整合。` },
+            { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}${flowTenGod}透出，身强逢之，更容易把注意力拉向资源和结果并转化为收获。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}${flowStem}财星阶段更利于项目落地、客户经营和资源整合。` },
             { dimension: "wealth", delta: 2, message: `${levelLabel}${flowTenGod}到位，身强任财，财富主题更容易落到实处。` },
             ...(gender === "male"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: 1,
-                    message: `${levelLabel}财星对男命也常对应关系与伴侣主题的升温。`
+                    message: `${levelLabel}${flowStem}财星对男命也常对应关系与伴侣主题的升温。`
                   }
                 ]
               : [])
@@ -553,15 +553,15 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢财，耗身之力增加，容易忙而无功、劳而少获。` },
-            { dimension: "career", delta: 0, message: `${levelLabel}财星阶段机会虽在，但身弱时更易力不从心，宜量力而为。` },
+            { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}${flowTenGod}透出，身弱逢之，耗身之力增加，容易忙而无功、劳而少获。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}${flowStem}财星阶段机会虽在，但身弱时更易力不从心，宜量力而为。` },
             { dimension: "wealth", delta: 0, message: `${levelLabel}${flowTenGod}虽浮现，但身弱难任财，进多出多、难有结余。` },
             ...(gender === "male"
               ? [
                   {
                     dimension: "relationships" as const,
                     delta: 0,
-                    message: `${levelLabel}财星对男命也常对应关系与伴侣主题的升温，身弱时更需量力经营。`
+                    message: `${levelLabel}${flowStem}财星对男命也常对应关系与伴侣主题的升温，身弱时更需量力经营。`
                   }
                 ]
               : [])
@@ -581,10 +581,10 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 1, message: `${levelLabel}身强食神泄秀，阶段氛围更利于展开和输出。` },
-            { dimension: "career", delta: 1, message: `${levelLabel}食神阶段适合创作、传播、产品表达和方法输出。` },
-            { dimension: "health", delta: 1, message: `${levelLabel}食神也常对应状态舒展与恢复空间增大。` },
-            { dimension: "wealth", delta: 1, message: `${levelLabel}食神带动输出变现，适合把能力转成结果。` }
+            { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}食神泄秀，阶段氛围更利于展开和输出。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}${flowStem}食神阶段适合创作、传播、产品表达和方法输出。` },
+            { dimension: "health", delta: 1, message: `${levelLabel}${flowStem}食神也常对应状态舒展与恢复空间增大。` },
+            { dimension: "wealth", delta: 1, message: `${levelLabel}${flowStem}食神带动输出变现，适合把能力转成结果。` }
           ]
         );
       } else {
@@ -597,10 +597,10 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢食神，泄气之力叠加，容易做得多却收效有限。` },
-            { dimension: "career", delta: 0, message: `${levelLabel}食神阶段仍利表达输出，但身弱时更要控制节奏、避免透支。` },
-            { dimension: "health", delta: -1, message: `${levelLabel}身弱食神泄身，体力和精力续航要格外留意。` },
-            { dimension: "wealth", delta: 0, message: `${levelLabel}食神虽利变现，但身弱泄气过重时收益常打折扣。` }
+            { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}食神透出，身弱逢之，泄气之力叠加，容易做得多却收效有限。` },
+            { dimension: "career", delta: 0, message: `${levelLabel}${flowStem}食神阶段仍利表达输出，但身弱时更要控制节奏、避免透支。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}${flowStem}食神泄身，体力和精力续航要格外留意。` },
+            { dimension: "wealth", delta: 0, message: `${levelLabel}${flowStem}食神虽利变现，但身弱泄气过重时收益常打折扣。` }
           ]
         );
       }
@@ -633,7 +633,7 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: -1, message: `${levelLabel}身弱逢伤官，泄气叠加冲劲外放，容易身心俱疲又招惹是非。` },
+            { dimension: "overall", delta: -1, message: `${levelLabel}${flowStem}伤官透出，身弱逢之，泄气叠加冲劲外放，容易身心俱疲又招惹是非。` },
             { dimension: "career", delta: -1, message: `${levelLabel}伤官不服管束，身弱时更难扛住规则摩擦带来的消耗。` },
             { dimension: "relationships", delta: -1, message: `${levelLabel}伤官偏强时，说话方式和边界感更需要克制。` },
             { dimension: "health", delta: -2, message: `${levelLabel}身弱伤官双重泄耗，熬夜、情绪外放对身心影响更明显。` }
@@ -668,9 +668,9 @@ export function buildFlowAnalysis(args: {
             members: [dayMaster.value, flowStem]
           },
           [
-            { dimension: "overall", delta: 1, message: `${levelLabel}印星增强，更利于吸收、复盘和修正节奏。` },
-            { dimension: "career", delta: 1, message: `${levelLabel}印星阶段适合学习、考证、拿方法论和构建支撑系统。` },
-            { dimension: "health", delta: 1, message: `${levelLabel}印星也有助于恢复和自我保护。` }
+            { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}印星增强，更利于吸收、复盘和修正节奏。` },
+            { dimension: "career", delta: 1, message: `${levelLabel}${flowStem}印星阶段适合学习、考证、拿方法论和构建支撑系统。` },
+            { dimension: "health", delta: 1, message: `${levelLabel}${flowStem}印星也有助于恢复和自我保护。` }
           ]
         );
       }
@@ -693,7 +693,7 @@ export function buildFlowAnalysis(args: {
               { dimension: "relationships", delta: -1, message: `${levelLabel}比肩强化自我立场，关系里更要注意互相让位。` }
             ]
           : [
-              { dimension: "overall", delta: 1, message: `${levelLabel}比肩帮身，信心和行动力增强。` },
+              { dimension: "overall", delta: 1, message: `${levelLabel}${flowStem}比肩透出，信心和行动力增强。` },
               { dimension: "career", delta: 1, message: `${levelLabel}有同类支持，适合合作和团队推进。` }
             ]
       );
@@ -716,7 +716,7 @@ export function buildFlowAnalysis(args: {
               { dimension: "relationships", delta: -1, message: `${levelLabel}劫财阶段更容易因边界与利益问题产生摩擦。` }
             ]
           : [
-              { dimension: "overall", delta: 0, message: `${levelLabel}劫财帮身但也争财，得失参半。` },
+              { dimension: "overall", delta: 0, message: `${levelLabel}${flowStem}劫财透出，帮身但也争财，得失参半。` },
               { dimension: "wealth", delta: -1, message: `${levelLabel}劫财仍有夺财之性，财务上需注意。` }
             ]
       );
@@ -762,7 +762,7 @@ export function buildFlowAnalysis(args: {
         members: [dayMaster.value, flowBranch]
       },
       [
-        { dimension: "overall", delta: -1, message: `${levelLabel}地支层面形成压力，体感波动更值得留神。` }
+        { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}层面形成压力，体感波动更值得留神。` }
       ]
     );
   } else if (branchInteraction === "generated-by") {
@@ -775,7 +775,7 @@ export function buildFlowAnalysis(args: {
         members: [dayMaster.value, flowBranch]
       },
       [
-        { dimension: "overall", delta: 1, message: `${levelLabel}地支生扶日主，底层环境容易出现托举。` }
+        { dimension: "overall", delta: 1, message: `${levelLabel}地支${flowBranch}生扶日主，底层环境容易出现托举。` }
       ]
     );
   }
@@ -797,9 +797,9 @@ export function buildFlowAnalysis(args: {
           result: relation.result
         },
         [
-          { dimension: "overall", delta: 1, message: `${levelLabel}地支有合，事情更容易被牵动、撮合或整合。` },
-          { dimension: "relationships", delta: 2, message: `${levelLabel}六合信号增强，关系互动和协商空间更大。` },
-          { dimension: "wealth", delta: 1, message: `${levelLabel}六合也利于合作、撮合资源与交易达成。` }
+          { dimension: "overall", delta: 1, message: `${levelLabel}地支${flowBranch}合${natalBranch}，事情更容易被牵动、撮合或整合。` },
+          { dimension: "relationships", delta: 2, message: `${levelLabel}${flowBranch}${natalBranch}合，关系互动和协商空间更大。` },
+          { dimension: "wealth", delta: 1, message: `${levelLabel}合局利于合作、撮合资源与交易达成。` }
         ]
       );
     }
@@ -814,8 +814,8 @@ export function buildFlowAnalysis(args: {
           members: [flowBranch, natalBranch]
         },
         [
-          { dimension: "overall", delta: -1, message: `${levelLabel}地支逢冲，阶段更容易出现变动、对冲和突发调整。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}六冲也容易带来节律打乱、奔波或身心紧张。` },
+          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}冲${natalBranch}，阶段更容易出现变动、对冲和突发调整。` },
+          { dimension: "health", delta: -1, message: `${levelLabel}冲局容易带来节律打乱、奔波或身心紧张。` },
           ...(natalDayBranch === natalBranch
             ? [
                 {
@@ -839,9 +839,9 @@ export function buildFlowAnalysis(args: {
           members: [flowBranch, natalBranch]
         },
         [
-          { dimension: "overall", delta: -1, message: `${levelLabel}六害偏向暗耗和不顺，很多问题会慢慢显形。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}六害常对应误解、别扭或暗中消耗。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}六害阶段也要防止情绪郁结转成体感问题。` }
+          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}害${natalBranch}，偏向暗耗和不顺，很多问题会慢慢显形。` },
+          { dimension: "relationships", delta: -1, message: `${levelLabel}害局常对应误解、别扭或暗中消耗。` },
+          { dimension: "health", delta: -1, message: `${levelLabel}害局阶段也要防止情绪郁结转成体感问题。` }
         ]
       );
     }
@@ -856,8 +856,8 @@ export function buildFlowAnalysis(args: {
           members: [flowBranch, natalBranch]
         },
         [
-          { dimension: "overall", delta: -1, message: `${levelLabel}刑象增强，阶段更容易出现拧巴、反复或内耗。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}相刑更需要处理边界、情绪和语言方式。` },
+          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}刑${natalBranch}，阶段更容易出现拧巴、反复或内耗。` },
+          { dimension: "relationships", delta: -1, message: `${levelLabel}刑局更需要处理边界、情绪和语言方式。` },
           { dimension: "health", delta: -2, message: `${levelLabel}刑象较重时，要重点看压力累积和身体警讯。` }
         ]
       );
