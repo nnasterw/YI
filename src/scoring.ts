@@ -7,7 +7,6 @@ export interface ElementScores {
   weakest: Element[];
   strongValue: number;
   weakValue: number;
-  isStrong: boolean;
 }
 
 export const GENERATING: Record<Element, Element> = { "木": "水", "火": "木", "土": "火", "金": "土", "水": "金" };
@@ -51,7 +50,6 @@ export function computeStrength(pillars: PillarDetails[], dayElement: Element): 
   const generating = GENERATING[dayElement];
   const strongValue = counts[dayElement] + counts[generating];
   const weakValue = Object.values(counts).reduce((a, b) => a + b, 0) - strongValue;
-  const isStrong = strongValue > 29;
 
   const max = Math.max(...Object.values(counts));
   const min = Math.min(...Object.values(counts));
@@ -60,7 +58,13 @@ export function computeStrength(pillars: PillarDetails[], dayElement: Element): 
   const weakest = (Object.entries(counts) as [Element, number][])
     .filter(([, v]) => v === min).map(([e]) => e);
 
-  return { counts, strongest, weakest, strongValue, weakValue, isStrong };
+  // 注：此前这里还有一个 isStrong = strongValue > 29 的字段，但 strongValue>29
+  // 这一单一总分阈值从未有典籍依据、也从未被 bazi.ts/renderer.ts 实际读取
+  // （二者均已改用 assessStrength() 的得令/得地/得势三维细判结论），保留该
+  // 死字段只会让后来者误以为它是有效判据而误用，故彻底移除，仅保留
+  // strongValue/weakValue 两个原始分值供上层展示，旺衰结论统一以
+  // assessStrength().isStrong / .level 为准。
+  return { counts, strongest, weakest, strongValue, weakValue };
 }
 
 export function getMonthElementState(monthBranch: string, element: Element): string {
@@ -114,13 +118,19 @@ export function assessStrength(pillars: PillarDetails[], dayElement: Element): S
 
   const supportSignals = [deLing, deDi, deShi].filter(Boolean).length;
 
+  // 四档判定统一以 supportRatio=0.5（扶抑力量是否过半）为方向基准，辅以
+  // supportSignals（得令/得地/得势命中数）做校验，避免"名强实弱"或"名弱实强"：
+  // 身旺/身强要求 supportRatio 高于半数，身弱/身极弱要求低于半数，档位差异
+  // 仅体现在具体门槛的松紧（旺0.55/强0.5，弱0.4/极弱0.3），方向绝不矛盾。
+  // 此前"身强"档误写为 supportRatio>0.45（低于半数即可称强），导致约2.5%
+  // 抽样命局出现 supportRatio 不足五成却被判"身强"的自相矛盾，已订正为 >0.5。
   let level: StrengthLevel;
   const reasons: string[] = [];
 
   if (supportSignals === 3 && supportRatio > 0.55) {
     level = "身旺";
     reasons.push("日主既得令又得地得势，三气俱全，为身旺之局。");
-  } else if (supportSignals >= 2 && supportRatio > 0.45) {
+  } else if (supportSignals >= 2 && supportRatio > 0.5) {
     level = "身强";
     reasons.push(`日主${deLing ? "得令" : deDi ? "得地" : "得势"}兼具其余助力，整体偏强。`);
   } else if (supportSignals === 0 && supportRatio < 0.3) {
@@ -140,12 +150,11 @@ export function assessStrength(pillars: PillarDetails[], dayElement: Element): S
       `得势：${deShi ? "是" : "否"}（天干比劫/印星帮扶${helpingStemCount}位）。`
   );
 
-  // isStrong 必须与上方三维细判的 level 同源推导，不可再用 computeStrength 的单一总分
-  // 阈值（strongValue>29）重新判定一遍——二者标准不同，实测约4%概率互相矛盾
-  // （例如1950-07-15 18:00男命：level="身强"但旧阈值判定strongValue不足29而给出
-  // isStrong=false），会导致同一个 StrengthAssessment 对象内部 level 与 isStrong
-  // 两个字段自相矛盾。身旺/身强→true，身弱/身极弱→false，中和态以supportRatio
-  // 是否过半兜底，与大运流年评分（isStrongForFlow）、网页渲染层保持完全一致的唯一口径。
+  // isStrong 必须与上方三维细判的 level 同源推导（computeStrength 的单一总分
+  // 阈值已废弃删除，见该函数注释），避免同一个 StrengthAssessment 对象内部
+  // level 与 isStrong 两个字段互相矛盾。身旺/身强→true，身弱/身极弱→false，
+  // 中和态以 supportRatio 是否过半兜底（与身强门槛>0.5衔接，>=0.5即算偏强），
+  // 与大运流年评分（isStrongForFlow）、网页渲染层保持完全一致的唯一口径。
   const isStrong =
     level === "身旺" || level === "身强"
       ? true
