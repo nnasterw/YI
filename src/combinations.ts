@@ -312,7 +312,9 @@ export function analyzeElementFlow(profile: BaziProfile, isStrong: boolean): Ele
     chains.push({
       type: "食伤过旺泄气",
       chain: `${dayElement}(日主) → ${shiShangEl}(食伤×${scores[shiShangEl].total})`,
-      description: `食伤过多会泄气太过——想法多但精力分散，或者表达过度得罪人。需要适度控制输出节奏。`,
+      description: isStrong
+        ? `食伤旺盛，日主有余气可泄——创造力、表达欲强，泄得出去则才华显露；但仍需防过度消耗、话多得罪人。`
+        : `身弱食伤又多，双重耗气——日主本就不足，还不断被食伤抽取，精力意志容易透支，宜量力而行，收敛表达。`,
       isPositive: false
     });
   }
