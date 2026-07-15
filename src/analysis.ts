@@ -587,12 +587,13 @@ export function buildNarrativeAnalysis(args: {
       // 或用神明确包含比劫且非财格（财格比劫偏重是破财信号而非合伙优势，不宜推荐合伙）
       // 依据：《子平真诠》"财格见比劫为忌，官制比劫则财可保；印格、建禄格比劫为用神则宜合伙"
       const isWealthPattern = pattern.name === "正财格" || pattern.name === "偏财格";
-      // 建禄格核心是"日主身旺、靠自身实力立命"，格局专属文案已指向独立创业/凭本事出头
-      // 建禄格+比劫为用神的情况下，格局主张独立而用神主张合伙，产生方向矛盾，排除建禄格
-      // 依据：《子平真诠》"建禄格以财官为贵，取用以官杀、财星为正用，比劫为辅助而非主路"
+      // 建禄格、食神格、伤官格的格局专属文案已明确"独立"方向，与比劫用神的"合伙"方向矛盾，排除
+      // 建禄格：格局主张"靠自身实力立命/独立创业"；食神格/伤官格：主张"才艺独立输出/创新创业"
+      // 依据：《子平真诠》"建禄格以财官为贵，食神格以食神生财，伤官格宜创业，均以独立输出为本"
       const isJianLuPattern = pattern.name === "建禄格";
+      const isIndependentOutputPattern = pattern.name === "食神格" || pattern.name === "伤官格（有制）" || pattern.name === "伤官格（伤尽）";
       const peerIsYongShen = yongShen.yongShen.includes(dayMaster.element);
-      if (peerIsYongShen && !isWealthPattern && !isJianLuPattern && peerScore >= 2) {
+      if (peerIsYongShen && !isWealthPattern && !isJianLuPattern && !isIndependentOutputPattern && peerScore >= 2) {
         career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
       }
       // 格局清纯结语：仅在已有≥2条有实质内容时才输出（避免唯一的第2条是废话）
@@ -828,10 +829,9 @@ export function buildNarrativeAnalysis(args: {
       relationships.push("命局气弱，虽内心独立，实际能量积蓄有限；感情中宜量力而行，先巩固自身根基，避免因过度付出或情感消耗而透支。");
     } else if (pattern.name === "正印格" && strength.isStrong) {
       // 正印格"可能显得被动"与日主气旺"感情主动"矛盾 → 换用不矛盾的补充
-      // 正印格气旺：感性细腻有主见，感情中能主动表达，但惯性依赖印星导致内在需求也强
-      // 正印格气旺：聚焦于主动表达能力与感情节奏的主动性，不重复格局专属"被理解需求"的描述
-      // 依据：《子平真诠》"印旺则思虑细腻、感情主动，但需留意主动中仍有印星依赖的柔性"  
-      relationships.push("命局气旺，感情中能主动把握节奏和表达心意，但在关系投入时仍需留意印星惯性带来的情感依赖倾向，保持适度的独立空间。");
+      // 正印格气旺：格局专属文案已覆盖"印星依赖"的表达，此处聚焦旺身的主动性优势，不重复依赖主题
+      // 依据：《子平真诠》"印旺日主则气足，感情中率先表达者得主动之利"
+      relationships.push("命局气旺，感情中能主动把握节奏、率先表达心意；格局本底感性细腻，情感的深度和质量往往优于广度。");
     } else {
       if (strength.isStrong) {
         relationships.push("日主气旺，感情中往往处于相对主动的位置，更容易主动经营和把握关系节奏；需注意避免过于强势导致对方感到压力。");
