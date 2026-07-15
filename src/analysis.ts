@@ -524,7 +524,11 @@ export function buildNarrativeAnalysis(args: {
       // 不应推荐"适合表达、创作"方向（与格局主线相悖）
       // 依据：《子平真诠》"正官格最忌伤官，食伤偏旺则格局受损，不宜以食伤方向定性事业路线"
       const isZhenggGuanPattern = pattern.name === "正官格";
-      if (outputScore >= 2 && !isOutputPattern && !isQishaPattern && !isZhengyinPattern && !isZhenggGuanPattern) {
+      // 正财格/偏财格以"勤劳积累、实业经营"为本，格局专属文案已明确"金融贸易/实业"方向；
+      // 食伤活跃对财格是"食伤生财"的顺局（有利），但通用"适合表达/创作"与财格实业路线混淆方向，跳过
+      // 依据：《子平真诠》"正财格，食神生财为顺，但格局定性在勤劳经营资源，非在才艺输出"
+      const isFinancePattern = pattern.name === "正财格" || pattern.name === "偏财格";
+      if (outputScore >= 2 && !isOutputPattern && !isQishaPattern && !isZhengyinPattern && !isZhenggGuanPattern && !isFinancePattern) {
         career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
       }
       // 成格格局专属核心路径（依《子平真诠》各格取用的职业方向）
