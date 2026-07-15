@@ -85,23 +85,30 @@ function getControllingElement(el: Element): Element {
   return map[el];
 }
 
-function judgeFavorable(dayElement: Element, isStrong: boolean): FavorableElements {
-  if (isStrong) {
-    return {
-      most: [getGeneratedElement(dayElement)],
-      good: [getControlledElement(dayElement), getControllingElement(dayElement)],
-      neutral: [],
-      bad: [getGeneratingElement(dayElement)],
-      worst: [dayElement]
-    };
-  }
-  return {
-    most: [getGeneratingElement(dayElement)],
-    good: [dayElement],
-    neutral: [getControllingElement(dayElement)],
-    bad: [getGeneratedElement(dayElement)],
-    worst: [getControlledElement(dayElement)]
-  };
+const ALL_ELEMENTS: Element[] = ["木", "火", "土", "金", "水"];
+
+// 喜忌用神五级判定：直接复用核心引擎 profile.yongShen 的病药/调候/通关/扶抑四法合参
+// 结论（含从强/从财/从杀/从儿等变格的顺势逻辑），不再在渲染层用"日主+身强身弱"
+// 二元公式重新推导一遍用神方向。旧实现只看 isStrong 套死板的扶抑公式，对病药格局
+// （如官杀混杂需取印化杀）、调候格局（寒暖燥湿）、尤其是变格命局（如从杀格身弱
+// 却应"忌印比生扶日主与杀相争"，与扶抑法"身弱喜印比"结论正相反）会给出与引擎
+// 真实结论相反的喜用神展示，是网页报告与核心引擎口径不一致的根源之一。
+function judgeFavorable(profile: BaziProfile): FavorableElements {
+  const { yongShen, xiShen, jiShen } = profile.yongShen;
+
+  const most = yongShen.slice(0, 1);
+  const good = xiShen.filter((el) => !most.includes(el));
+  const bad = jiShen.filter((el) => !most.includes(el) && !good.includes(el));
+  // 仇神：五行中克制忌神的那一方（忌神的"克我"方向），是仅次于忌神的不利五行；
+  // 五行只有五个，用神/喜神/忌神通常已覆盖四个左右，仇神即为剩余那一个。
+  const worst = bad
+    .map((el) => getControllingElement(el))
+    .filter((el) => !most.includes(el) && !good.includes(el) && !bad.includes(el));
+  const classified = new Set([...most, ...good, ...bad, ...worst]);
+  // 闲神：未被用神/喜神/忌神/仇神覆盖的五行，吉凶不明显，暂列中性。
+  const neutral = ALL_ELEMENTS.filter((el) => !classified.has(el));
+
+  return { most, good, neutral, bad, worst };
 }
 
 function toneLabel(tone: string): string {
@@ -256,7 +263,7 @@ function renderStrengthJudgment(profile: BaziProfile, scores: ElementScores): st
     </div>`;
 }
 
-function renderFavorable(dayElement: Element, favorable: FavorableElements, isStrong: boolean): string {
+function renderFavorable(profile: BaziProfile, dayElement: Element, favorable: FavorableElements): string {
   const tenGodMap: Record<string, string> = {
     [getGeneratedElement(dayElement)]: "食伤（我生）",
     [getControlledElement(dayElement)]: "财星（我克）",
@@ -283,10 +290,14 @@ function renderFavorable(dayElement: Element, favorable: FavorableElements, isSt
     return `<tr class="${cls}"><td>${level}</td><td>${elSpan(el)}</td><td>${tenGodMap[el] || ""}</td><td>${colorMap[el]}</td><td>${directionMap[el]}</td><td>${numberMap[el]}</td><td>${industryMap[el]}</td></tr>`;
   }).join("");
 
+  const yongShenInfo = profile.yongShen;
+  const methodLabel = `${yongShenInfo.primaryMethod}法`;
+  const reasonText = yongShenInfo.reasons.join(" ");
+
   return `
     <div class="card">
       <h2>喜忌用神</h2>
-      <p>身${isStrong ? "旺" : "弱"}取用：${isStrong ? "需泄（食伤）、耗（财星）、克（官杀）" : "需生（印星）、帮（比劫）"}</p>
+      <p>取用依据：<strong>${methodLabel}</strong>——${reasonText}</p>
       <table class="fav-table">
         <tr><th>喜忌</th><th>五行</th><th>十神</th><th>颜色</th><th>方位</th><th>数字</th><th>行业</th></tr>
         ${rows}
@@ -554,7 +565,7 @@ function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStr
   return `<div class="card"><h2>大运流年详情</h2><p class="hint">点击每一年可展开查看各维度详细分析和触发信号</p>${sections}</div>`;
 }
 
-function renderPersonality(profile: BaziProfile, scores: ElementScores, favorable: FavorableElements): string {
+function renderPersonality(profile: BaziProfile, scores: ElementScores): string {
   const dm = profile.chart.dayMaster;
   const dayBranch = profile.chart.pillars[2].branch.value;
   const diShi = profile.chart.pillars[2].diShi;
@@ -1016,7 +1027,7 @@ function renderCareerPath(profile: BaziProfile, scores: ElementScores, _favorabl
 export function renderReport(profile: BaziProfile): string {
   const scores = computeElementScores(profile);
   const dayElement = profile.chart.dayMaster.element;
-  const favorable = judgeFavorable(dayElement, scores.isStrong);
+  const favorable = judgeFavorable(profile);
   const combos = detectCombinations(profile, scores.isStrong);
   const dayBranch = analyzeDayBranch(profile);
   const flowChains = analyzeElementFlow(profile, scores.isStrong);
@@ -1025,7 +1036,7 @@ export function renderReport(profile: BaziProfile): string {
     // === 第一区：画像与性格（叙事优先）===
     renderNarrativeAnalysis(profile),
     renderPortrait(profile, scores, combos),
-    renderPersonality(profile, scores, favorable),
+    renderPersonality(profile, scores),
     renderCombinations(combos),
 
     // === 第二区：命盘结构 ===
@@ -1033,7 +1044,7 @@ export function renderReport(profile: BaziProfile): string {
     renderPillars(profile),
     renderElementScores(scores, dayElement),
     renderStrengthJudgment(profile, scores),
-    renderFavorable(dayElement, favorable, scores.isStrong),
+    renderFavorable(profile, dayElement, favorable),
 
     // === 第三区：人生主题 ===
     renderRelationshipWindow(profile, dayElement, scores.isStrong),

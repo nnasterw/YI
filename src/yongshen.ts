@@ -188,35 +188,56 @@ export function assessYongShen(
     primary = fuyi;
   }
 
-  // 变格命局（从强/从财/从杀/从儿等）用神取用逻辑与正格相反：顺应旺神之势而不逆抑
+  // 变格命局（从强/从财/从杀/从儿等）用神取用逻辑与正格相反：顺应旺神之势而不逆抑。
+  // 一旦命中变格顺势，最终用神与正格扶抑/病药/调候/通关四法的结论在方向上通常
+  // 直接相反（例如从杀格身弱却应"忌印比生扶日主"，与病药法"官杀混杂取印化杀"
+  // 或扶抑法"身弱喜印比"正相反）。此前实现只覆盖了 yongShen 数组、追加一条
+  // reasons，却仍把 primaryMethod/methods[0] 留在被覆盖的正格方法上，导致对外
+  // 展示的"取用依据"（如"以病药法为主"）与实际生效的用神结论同屏矛盾。现改为
+  // 命中变格时整体重构 primary 为专门的"顺势"方法，reasons 只保留最终定论，
+  // 避免已被否定的正格推导过程和最终结论混在一起造成自相矛盾的展示。
   let yongShen = [...new Set(primary.elements)];
   const reasons = [primary.reason];
 
+  // 注：建禄格/羊刃格在 determinePattern 中恒为 category="正格"（只有 checkVariantPattern
+  // 命中从强/从财/从杀/从儿时才会把 name 覆盖为对应的"从X格"并置 category="变格"，
+  // 建禄格/羊刃格的 name 不会与 category="变格" 同时出现），故以下分支只处理真正的从强格。
   if (pattern?.category === "变格") {
-    // 注：建禄格/羊刃格在 determinePattern 中恒为 category="正格"（只有 checkVariantPattern
-    // 命中从强/从财/从杀/从儿时才会把 name 覆盖为对应的"从X格"并置 category="变格"，
-    // 建禄格/羊刃格的 name 不会与 category="变格" 同时出现），故此分支只处理真正的从强格。
+    let overrideReason: string | null = null;
+
     if (pattern.name === "从强格") {
       // 顺其旺势：取同气与印星（生我者）为用，不取克泄耗
       yongShen = [dayElement, GENERATING[dayElement]];
-      reasons.push(`${pattern.name}日主气势独旺，宜顺其旺势，以同气及生扶之神为用，不宜逆抑。`);
+      overrideReason = `${pattern.name}日主气势独旺，宜顺其旺势，以同气及生扶之神为用，不宜逆抑。`;
     } else if (pattern.name === "从财格") {
       // 财星（我克者）+ 食伤（我生者，生财之神）
       const wealth = CONTROLLING[dayElement];
       const output = reverseGenerating(dayElement);
       yongShen = [wealth, output];
-      reasons.push("从财格宜顺从财星食伤之势为用，忌比劫印星逆势相争。");
+      overrideReason = "从财格宜顺从财星食伤之势为用，忌比劫印星逆势相争。";
     } else if (pattern.name === "从杀格") {
       // 官杀（克我者）
       const officer = reverseControlling(dayElement);
       yongShen = [officer];
-      reasons.push("从杀格宜顺从官杀之势为用，忌印比生扶日主与杀相争。");
+      overrideReason = "从杀格宜顺从官杀之势为用，忌印比生扶日主与杀相争。";
     } else if (pattern.name === "从儿格") {
       // 食伤（我生者）+ 财星（我克者，食伤所生之神，顺势泄秀生财）
       const output = reverseGenerating(dayElement);
       const wealth = CONTROLLING[dayElement];
       yongShen = [output, wealth];
-      reasons.push("从儿格宜顺从食伤秀气之势为用，忌印星回克食伤。");
+      overrideReason = "从儿格宜顺从食伤秀气之势为用，忌印星回克食伤。";
+    }
+
+    if (overrideReason) {
+      const original = primary;
+      primary = { method: "顺势", elements: [...yongShen], reason: overrideReason };
+      reasons.length = 0;
+      const originalReasonTrimmed = original.reason.replace(/。$/, "");
+      reasons.push(
+        overrideReason,
+        `（若按正格常法（${original.method}）推导则为"${originalReasonTrimmed}"，但${pattern.name}顺势为准，不采此说。）`
+      );
+      methods.unshift(primary);
     }
   }
 

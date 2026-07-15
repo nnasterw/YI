@@ -192,7 +192,7 @@ export interface PatternAssessment {
   reasons: string[];
 }
 
-export type YongShenMethodName = "扶抑" | "病药" | "调候" | "通关";
+export type YongShenMethodName = "扶抑" | "病药" | "调候" | "通关" | "顺势";
 
 export interface YongShenMethodResult {
   method: YongShenMethodName;
