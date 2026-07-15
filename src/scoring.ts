@@ -37,6 +37,10 @@ export function computeStrength(pillars: PillarDetails[], dayElement: Element): 
 
   const branches = pillars.map(p => p.branch.value);
   const monthBranch = pillars[1].branch.value;
+  // 月令加权：月支藏干额外计算一次，使月令在五行强弱分值中权重更高。
+  // 依据：《滴天髓》"月令提纲，尤关重要"；《子平真诠》以月令为格局之根。
+  // 影响范围：仅 computeStrength() 的 counts 输出（用于 supportRatio 计算），
+  // 不影响 assessStrength() 中独立判断的得令/得地/得势三维细判。
   const allBranches = [...branches, monthBranch];
 
   for (const branch of allBranches) {
