@@ -338,10 +338,30 @@ function evaluatePatternOutcome(
     return { outcome: "败格", reasons };
   }
 
+  // 财格破格条件（依《子平真诠》财格篇）：
+  // 正财格：正财为阴阳相配之财，最忌劫财（同性异阴阳争财），比肩次之；
+  // 偏财格：偏财为同性之财（义财），比肩最忌（同性竞争），劫财同样有破格之嫌；
+  // 二者共同点：比肩、劫财均为分夺财星之物，均有破格风险；
+  // 有官星制比劫则财可救：官星克比劫，比劫受制则财不被夺。
   if (patternName.includes("正财格") || patternName.includes("偏财格")) {
     const hasJieCai = allStems.some((stem) => computeTenGod(dayStem, stem) === "劫财");
-    if (hasJieCai) {
-      reasons.push("局中劫财透出，财星易被分夺，需留意破格风险。");
+    const hasBiJian = allStems.some((stem) => computeTenGod(dayStem, stem) === "比肩");
+    const hasOfficer = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正官" || tenGod === "七杀";
+    });
+    const hasPeerConflict = patternName.includes("正财格") ? hasJieCai : (hasJieCai || hasBiJian);
+    if (hasPeerConflict && hasOfficer) {
+      // 比劫透出但官星制比劫：财星得以保全，属救格之象
+      // 依据：《子平真诠》"财格见比劫，官星制之则财可保，否则财被夺"
+      reasons.push("局中比劫透出，但官星得以制衡比劫，财星受护，属有救之象。");
+      return { outcome: "成格", reasons };
+    }
+    if (hasPeerConflict) {
+      // 比劫透出且无官星制：财星被分夺
+      // 依据：《子平真诠》"财格，比劫透而无官制，财被夺，格局大损"
+      const label = hasJieCai ? "劫财" : "比肩";
+      reasons.push(`局中${label}透出且无官星制衡，财星易被分夺，破格风险高，大运需走官杀补救。`);
       return { outcome: "败格", reasons };
     }
   }
@@ -432,16 +452,60 @@ function evaluatePatternOutcome(
     return { outcome: "败格", reasons };
   }
 
+  // 建禄格破格条件（依《子平真诠》"建禄格，喜官杀财食伤为用；七杀入格须制化"）：
+  // 建禄格本身为比劫当令，须以财官食伤疏导比劫之力；
+  // 1. 七杀透出且无食神/印星制化 → 败格（杀旺无制）；
+  // 2. 伤官透出且无财/印 → 败格（伤官恐克用神之官星）；
+  // 3. 财官透出 → 成格（比劫有用武之地）；
+  // 4. 食伤透出且有财 → 成格（食伤生财，比劫力量正向流泄）；
+  // 5. 上述均无 → 中性（格局清而力量内耗，不成败格但品质有限）。
   if (patternName === "建禄格") {
-    const hasWealthOrOfficer = allStems.some((stem) => {
+    const hasZhengGuan = allStems.some((stem) => computeTenGod(dayStem, stem) === "正官");
+    const hasQiSha = allStems.some((stem) => computeTenGod(dayStem, stem) === "七杀");
+    const hasCai = allStems.some((stem) => {
       const tenGod = computeTenGod(dayStem, stem);
-      return tenGod === "正财" || tenGod === "偏财" || tenGod === "正官" || tenGod === "七杀";
+      return tenGod === "正财" || tenGod === "偏财";
     });
-    if (hasWealthOrOfficer) {
-      reasons.push("局中财官透出，建禄之比劫得以转化为可用之力，属成格之象。");
+    const hasYin = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正印" || tenGod === "偏印";
+    });
+    const hasShiShen = allStems.some((stem) => computeTenGod(dayStem, stem) === "食神");
+    const hasShangGuan = allStems.some((stem) => computeTenGod(dayStem, stem) === "伤官");
+    // 七杀透出且无制化：建禄格最忌七杀无制（比劫帮身但七杀过旺）
+    // 依据：《子平真诠》"建禄格，遇七杀透出，须有制化方吉，无制则凶"
+    if (hasQiSha && !hasShiShen && !hasYin) {
+      reasons.push("局中七杀透出且无食神制杀、无印星化杀，建禄格遇杀无制，格局凶烈，需大运补位。");
+      return { outcome: "败格", reasons };
+    }
+    // 七杀有制（食神或印星）：制化有力，建禄制杀为贵
+    if (hasQiSha && (hasShiShen || hasYin)) {
+      reasons.push("局中七杀透出但有制化（食神制杀或印星化杀），建禄格以制杀为用，属成格之象。");
       return { outcome: "成格", reasons };
     }
-    reasons.push("局中财官皆不透，建禄比劫虽帮身却缺乏施展方向，格局清而不透，力量偏于内耗。");
+    // 正官透出：建禄格以官为用，比劫力量转化为官星所用
+    // 依据：《子平真诠》"建禄格，透官者，以财官为用，格局上乘"
+    if (hasZhengGuan) {
+      if (hasShangGuan && !hasYin) {
+        // 正官透出但伤官也透出且无印化解：官被伤破
+        reasons.push("局中正官透出但伤官同透且无印星化解，伤官损官，建禄格成色受损，需大运补救。");
+        return { outcome: "败格", reasons };
+      }
+      reasons.push("局中正官透出，建禄之比劫得以循官星通道转化为可用之力，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+    // 财星透出：建禄格以财为用，比劫虽多但财星可疏导
+    if (hasCai) {
+      reasons.push("局中财星透出，建禄之比劫借财星通道输出，格局有用武之地，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+    // 食伤透出（无财无官）：食伤为中间层，可转财；有官杀则上文已处理
+    if (hasShiShen || hasShangGuan) {
+      reasons.push("局中食伤透出，建禄比劫之力可借食伤泄秀流转，格局有一定出路，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+    // 财官食伤均不透：格局清而不透，力量偏于内耗，品质有限
+    reasons.push("局中财官食伤皆不透，建禄比劫虽帮身却缺乏施展方向，格局力量偏于内耗，后天努力尤为关键。");
     return { outcome: "成格", reasons };
   }
 

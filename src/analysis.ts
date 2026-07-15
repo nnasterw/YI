@@ -379,11 +379,11 @@ export function buildNarrativeAnalysis(args: {
         break;
     }
   } else {
-    // 正格 wealth 分析
-    if (wealthScore >= 3) {
+    // 正格 wealth 分析（阈值降至 >=2，与 career 维度保持一致）
+    if (wealthScore >= 2) {
       wealth.push("财星活跃，命盘对资源、项目、交易和现金流更敏感，利于经营意识的培养。");
     }
-    if (peerScore >= 3) {
+    if (peerScore >= 2) {
       wealth.push("比劫偏多，拿项目、做合伙、争资源的动力强，但也要防止分财与成本失控。");
     }
     if (yongShen.yongShen.includes(CONTROLLING[dayMaster.element])) {
