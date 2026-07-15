@@ -291,41 +291,94 @@ export function buildNarrativeAnalysis(args: {
   const peerScore =
     (tenGodDistribution.counts.比肩 ?? 0) + (tenGodDistribution.counts.劫财 ?? 0);
 
-  if (officerScore >= 3) {
-    career.push("官杀信息偏重，做事倾向看重秩序、责任与结果，适合有规则边界的岗位。");
-  }
-  if (resourceScore >= 3) {
-    career.push("印星支持较足，学习吸收、证照积累、方法论沉淀往往能放大事业稳定性。");
-  }
-  if (outputScore >= 3) {
-    career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
-  }
-  if (pattern.outcome === "成格") {
-    career.push("格局清纯，事业发展宜顺势强化优势领域。");
-  } else if (pattern.outcome === "败格") {
-    career.push("存在破格信号，事业上更需靠后天努力和大运补位。");
-  }
-  if (yongShen.yongShen.includes(dayMaster.element) || peerScore >= 3) {
-    career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
+  // 变格专属 career 文案（依《子平真诠》《三命通会》变格取用原则）
+  if (pattern.category === "变格") {
+    switch (pattern.name) {
+      case "从强格":
+        // 从强格：日主及比印极旺，宜顺其强势，不宜以官杀、财星抑制
+        // 依据：《子平真诠》"从强者，四柱无财官，比劫印绶重重，日主无泄，以强论"
+        career.push("从强格以日主自身能量为纲，事业最宜独立门户、自主发展或开创事业，越顺从自身意志方向越顺。");
+        career.push("大运忌走财官（克泄）之地，顺比印之运时格局稳定、事业顺遂；逆势运中需格外稳健，勿强行拓展。");
+        break;
+      case "从财格":
+        // 依据：《子平真诠》"从财者，日主无根，满局财星或财得令，财气专旺"
+        // "从财格宜从财，财官食伤皆为喜，比印破格最忌"
+        career.push("从财格以财星能量为核心驱动，天然适合经营、商业、资本运作、财务管理等与钱财资源直接挂钩的路径。");
+        career.push("大运喜走财官食伤之地，合作与资源整合能力是核心竞争力；比劫印绶运破格，需注意资金消耗与竞争压力。");
+        break;
+      case "从杀格":
+        // 依据：《子平真诠》"从杀者，日主无根，满局官杀，日主无力抗拒，顺其杀势"
+        // "从杀格，官杀为权，财生官杀为喜，宜在权力或竞争体系内发展"
+        career.push("从杀格以官杀权势为纲，在竞争激烈、层级分明或高压任务型环境中反而能量爆发；适合体制内、军警、高管等权力体系赛道。");
+        career.push("大运喜走财杀之地，能量在压力与约束中释放；比劫印绶运破格，遇自我膨胀或抗拒管束时反易受阻。");
+        break;
+      case "从儿格":
+        // 依据：《子平真诠》"从儿格，日主气弱，食伤泄秀独旺，以食伤为用"
+        // "从儿格，食伤为纲，才艺、技术、创作皆宜，顺其秀气流泄"
+        career.push("从儿格以食伤秀气为纲，才艺、技术、创意、写作、学术、设计等需要输出能力的领域最能发挥天赋。");
+        career.push("大运喜走食伤财星之地，技能变现路径顺畅；官杀运克制食伤为忌，印绶运回克反弄巧成拙，需格外谨慎转型。");
+        break;
+    }
+  } else {
+    // 正格 career 分析
+    if (officerScore >= 3) {
+      career.push("官杀信息偏重，做事倾向看重秩序、责任与结果，适合有规则边界的岗位。");
+    }
+    if (resourceScore >= 3) {
+      career.push("印星支持较足，学习吸收、证照积累、方法论沉淀往往能放大事业稳定性。");
+    }
+    if (outputScore >= 3) {
+      career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
+    }
+    if (pattern.outcome === "成格") {
+      career.push("格局清纯，事业发展宜顺势强化优势领域。");
+    } else if (pattern.outcome === "败格") {
+      career.push("存在破格信号，事业上更需靠后天努力和大运补位。");
+    }
+    if (yongShen.yongShen.includes(dayMaster.element) || peerScore >= 3) {
+      career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
+    }
   }
   if (career.length === 0) {
     career.push(DIMENSION_FALLBACK.career);
   }
 
-  if (wealthScore >= 3) {
-    wealth.push("财星活跃，命盘对资源、项目、交易和现金流更敏感，利于经营意识的培养。");
+  // 变格专属 wealth 文案
+  if (pattern.category === "变格") {
+    switch (pattern.name) {
+      case "从强格":
+        // 从强格忌财（财破比劫或印），宜比劫帮身，财运反不利
+        wealth.push("从强格忌财星（财克比劫或引官杀破格），大运流年引动财星时需防资金消耗和外部干扰；积累财富靠的是把自身强势能力变现，而非单纯追逐财星。");
+        break;
+      case "从财格":
+        // 从财格财星为喜，宜顺势经营
+        wealth.push("从财格以财星为用，财运、投资机会来临时顺势把握，资源整合和商业嗅觉是天然优势；比劫运中须防合伙纠纷和资金分流。");
+        break;
+      case "从杀格":
+        // 从杀格财生官杀为喜，财是间接助力
+        wealth.push("从杀格财星生官杀，财富积累往往通过权力平台或职务晋升带来；在体系内做出成绩、获得认可是财富增长的主要路径，宜以事业带财。");
+        break;
+      case "从儿格":
+        // 从儿格食伤生财，技能变现是核心
+        wealth.push("从儿格以食伤泄秀为用，财富来自技能、才艺或智识的直接变现；专注深耕一门手艺或输出能力，让食伤生财的自然通道保持畅通。");
+        break;
+    }
+  } else {
+    // 正格 wealth 分析
+    if (wealthScore >= 3) {
+      wealth.push("财星活跃，命盘对资源、项目、交易和现金流更敏感，利于经营意识的培养。");
+    }
+    if (peerScore >= 3) {
+      wealth.push("比劫偏多，拿项目、做合伙、争资源的动力强，但也要防止分财与成本失控。");
+    }
+    if (yongShen.yongShen.includes(CONTROLLING[dayMaster.element])) {
+      wealth.push("财星恰与用神方向重合，理财与创收的天然敏感度更高，值得重点经营。");
+    }
   }
-  if (peerScore >= 3) {
-    wealth.push("比劫偏多，拿项目、做合伙、争资源的动力强，但也要防止分财与成本失控。");
-  }
-  const wealthElement = CONTROLLING[dayMaster.element];
   if (yongShen.yongShen.length > 0) {
     wealth.push(
       `用神方向以${yongShen.yongShen.join("、")}为先，大运流年一旦引动此类五行，往往是财富节奏的重要触发点。`
     );
-  }
-  if (yongShen.yongShen.includes(wealthElement)) {
-    wealth.push("财星恰与用神方向重合，理财与创收的天然敏感度更高，值得重点经营。");
   }
   if (wealth.length === 0) {
     wealth.push(DIMENSION_FALLBACK.wealth);

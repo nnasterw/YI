@@ -143,6 +143,17 @@ export function assessStrength(pillars: PillarDetails[], dayElement: Element): S
   } else if (supportSignals <= 1 && supportRatio < 0.4) {
     level = "身弱";
     reasons.push(`日主${!deLing ? "失令" : !deDi ? "失地" : "失势"}，扶助不足，整体偏弱。`);
+  } else if (deLing && supportSignals === 1 && supportRatio > 0.5) {
+    // 得令单独成立且分值过半：依《子平真诠》"月令独旺，气势虽薄，仍为偏强之局"
+    // 得地/得势缺位时月令之气仍足以令日主偏强，三维标准不必全占。
+    level = "身强";
+    reasons.push("日主得令，虽失地失势，月令之气独旺，分值过半，整体偏强。");
+  } else if (!deLing && supportSignals === 2 && supportRatio < 0.42) {
+    // 失令兼总分不足42%：依《三命通会》"月令为提纲，失令则气弱"；
+    // 《滴天髓》"失时失令，虽强变弱"——即使得地得势，月令克泄之势压制
+    // 下总分不足，整体仍偏弱。
+    level = "身弱";
+    reasons.push("日主失令，虽得地得势，月令克泄之势重，总分不及四成二，整体偏弱。");
   } else {
     level = "中和";
     reasons.push("日主扶抑之力大致平衡，需结合格局与用神再定取舍。");

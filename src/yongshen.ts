@@ -78,15 +78,21 @@ function selectByBingYao(
   // 对中和偏强命局"当忌比劫、当克食伤"的结论互相矛盾。
   const isStrong = strength.isStrong;
 
-  const officerCount = allStems.filter((stem) => {
+  // officerCount/peerCount/outputCount 统一排除日干自身（日干对自身=比肩，
+  // 不会是官杀/食伤，因此 officerCount/outputCount 天然不含日干；但 peerCount
+  // 若不排除日干，computeTenGod(dayStem,dayStem)="比肩"会使计数多1，导致
+  // "除日干外仅1根天干比劫"被文案标为"2位"，与"重重"之义不符。
+  // 依据：《子平真诠》"比劫重重"指命局中多根他柱天干为比劫，不计日干本身。
+  const nonDayStems = allStems.filter((stem, idx) => pillars[idx].key !== "day");
+  const officerCount = nonDayStems.filter((stem) => {
     const tenGod = computeTenGod(dayStem, stem);
     return tenGod === "正官" || tenGod === "七杀";
   }).length;
-  const peerCount = allStems.filter((stem) => {
+  const peerCount = nonDayStems.filter((stem) => {
     const tenGod = computeTenGod(dayStem, stem);
     return tenGod === "比肩" || tenGod === "劫财";
   }).length;
-  const outputCount = allStems.filter((stem) => {
+  const outputCount = nonDayStems.filter((stem) => {
     const tenGod = computeTenGod(dayStem, stem);
     return tenGod === "食神" || tenGod === "伤官";
   }).length;
