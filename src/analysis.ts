@@ -706,11 +706,16 @@ export function buildFlowAnalysis(args: {
       );
       break;
     case "劫财":
+      // tone 需与该信号自身的 delta 净方向一致：身旺逢劫是纯粹的负面（overall/wealth/
+      // relationships 三项皆负），故为 challenging；身弱逢劫是"帮身但争财"的得失参半
+      // （overall=0 中性，仅 wealth 单项偏负），文案本身也明写"得失参半"，若仍标注
+      // challenging 会与"中性/参半"的语义矛盾，且被 web 端 computeCorrectedTone 的
+      // 十神评分（每条 challenging 信号计 -1 分）误判为纯负面，故改标 mixed。
       registerSignal(
         {
           category: "ten-god",
           type: flowTenGod,
-          tone: "challenging",
+          tone: isStrong ? "challenging" : "mixed",
           description: isStrong
             ? `${levelLabel}天干${flowStem}为${flowTenGod}，身旺逢劫——破财、争夺、冲动决策风险达到峰值。`
             : `${levelLabel}天干${flowStem}为${flowTenGod}，劫财帮身有力但也争夺资源，得失参半。`,

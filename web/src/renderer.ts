@@ -431,9 +431,15 @@ function computeCorrectedTone(
   }
 
   // 2. 十神作用 (25%) - 从引擎信号中提取
+  // 注：必须限定 category === "ten-god"，否则会把下面第3步"冲合刑害(20%)"
+  // 专门统计的 branch-relation 信号、以及不分身强身弱的固定五行喜忌 element
+  // 信号也计入本项，造成同一批信号被跨权重段重复计分——实测占比达76%的
+  // 大运周期评分会因这一遗漏而产生偏差，修正后"十神作用"才真正只反映
+  // buildFlowAnalysis 中按 isStrong 细判过的十神喜忌信号。
   const signals = analysis.signals || [];
   let tenGodScore = 0;
   for (const s of signals) {
+    if (s.category !== "ten-god") continue;
     if (s.tone === "supportive") tenGodScore += 1;
     else if (s.tone === "challenging") tenGodScore -= 1;
   }

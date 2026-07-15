@@ -188,6 +188,37 @@ describe("buildFlowAnalysis unit", () => {
     expect(tenGodSignals.length).toBe(1);
     expect(tenGodSignals[0].type).toBe("正财");
   });
+
+  // 回归：劫财 tone 需与自身 delta 净方向一致——身旺逢劫是纯负面（challenging），
+  // 身弱逢劫帮身但争财、得失参半，文案明写"参半"，tone 不应再标为纯负面的
+  // challenging（否则会被 web 端十神评分误判为-1分，且与文案语义矛盾）。
+  it("劫财 tone 随身强身弱变化：身旺为 challenging，身弱为 mixed", () => {
+    const strongResult = buildFlowAnalysis({
+      ganZhi: "庚辰",
+      level: "cycle",
+      dayMaster,
+      natalPillars,
+      gender: "male",
+      isStrong: true
+    });
+    const strongJieCai = strongResult.signals.find(
+      (signal) => signal.category === "ten-god" && signal.type === "劫财"
+    );
+    expect(strongJieCai?.tone).toBe("challenging");
+
+    const weakResult = buildFlowAnalysis({
+      ganZhi: "庚辰",
+      level: "cycle",
+      dayMaster,
+      natalPillars,
+      gender: "male",
+      isStrong: false
+    });
+    const weakJieCai = weakResult.signals.find(
+      (signal) => signal.category === "ten-god" && signal.type === "劫财"
+    );
+    expect(weakJieCai?.tone).toBe("mixed");
+  });
 });
 
 describe("analyzeNatalRelations", () => {
