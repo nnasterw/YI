@@ -1,4 +1,4 @@
-import { STEM_META, computeTenGod, getElementInteraction } from "./constants";
+import { STEM_META, HIDDEN_STEM_WEIGHTS, computeTenGod, getElementInteraction } from "./constants";
 import type { BaziProfile, Element, PillarDetails } from "./types";
 
 export interface TenGodCombination {
@@ -349,11 +349,16 @@ export function analyzeLuckCycleLayers(
     ? `地支${branch}(${branchElement})为喜——后5年底层环境支持。`
     : `地支${branch}(${branchElement})为忌——后5年底层环境有压力。`;
 
+  // 取地支主气（权重最大的藏干）计算十神，修复原来误用天干stem的bug
+  const branchHiddenStems = HIDDEN_STEM_WEIGHTS[branch] ?? {};
+  const branchMainStem = Object.entries(branchHiddenStems).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] ?? stem;
+  const branchMainTenGod = computeTenGod(dayMaster.value, branchMainStem);
+
   return {
     stemElement,
     branchElement,
     stemTenGod,
-    branchMainTenGod: computeTenGod(dayMaster.value, stem),
+    branchMainTenGod,
     stemAnalysis: stemDesc,
     branchAnalysis: branchDesc,
     stemIsPositive,
