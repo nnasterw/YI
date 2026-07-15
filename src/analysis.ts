@@ -494,7 +494,11 @@ export function buildNarrativeAnalysis(args: {
       // 依据：《子平真诠》"正印格，印旺者不宜食伤泄秀；食伤过旺，耗损印气，为忌"
       const isQishaPattern = pattern.name === "七杀格";
       const isZhengyinPattern = pattern.name === "正印格";
-      if (outputScore >= 2 && !isOutputPattern && !isQishaPattern && !isZhengyinPattern) {
+      // 正官格以"官印相生"为纲，食伤偏旺对正官格是"伤官克官"的警示信号而非优势，
+      // 不应推荐"适合表达、创作"方向（与格局主线相悖）
+      // 依据：《子平真诠》"正官格最忌伤官，食伤偏旺则格局受损，不宜以食伤方向定性事业路线"
+      const isZhenggGuanPattern = pattern.name === "正官格";
+      if (outputScore >= 2 && !isOutputPattern && !isQishaPattern && !isZhengyinPattern && !isZhenggGuanPattern) {
         career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
       }
       // 成格格局专属核心路径（依《子平真诠》各格取用的职业方向）
@@ -791,11 +795,17 @@ export function buildNarrativeAnalysis(args: {
         relationships.push("命局正财偏多而日主气弱，财星反成负担，感情中容易被动受牵制；先固根基再拓展关系。");
       }
     }
-    if (gender === "female" && zhengGuanCount >= 2) {
+    // 女命正官多：通用文案"对规则、承诺与责任感的需求较强"
+    // 当格局本身是正官格时，格局专属文案已精准覆盖此语义，无需重复输出十神通用文案
+    // 依据：《子平真诠》"正官格以正官为纲，格局专属感情定性比十神通用更精确，不应叠说"
+    if (gender === "female" && zhengGuanCount >= 2 && pattern.name !== "正官格") {
       // 女命正官多：或婚姻关系多番，或感情中对规则与责任较敏感
       relationships.push("命局正官偏多，感情中对规则、承诺与责任感的需求较强；大运逢官星旺地，婚配议题易被激活。");
     }
-    if (gender === "female" && qiShaCount >= 2 && zhengGuanCount === 0) {
+    // 女命七杀旺而无正官：通用文案"高张力、强吸引"
+    // 当格局本身是七杀格时，格局专属文案已精准覆盖"张力与激情"语义，无需重复输出十神通用文案
+    // 依据：《子平真诠》"七杀格以制化为贵；格局专属感情定性涵盖高张力特征，十神通用文案构成冗余"
+    if (gender === "female" && qiShaCount >= 2 && zhengGuanCount === 0 && pattern.name !== "七杀格") {
       // 女命七杀旺而无正官：感情偏向强势有吸引力的对象，关系容易高张力
       relationships.push("命局七杀偏重而无正官制化，感情模式偏向高张力、强吸引的类型；需留意关系节奏过快或情绪拉锯。");
     }
