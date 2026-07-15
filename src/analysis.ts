@@ -282,12 +282,26 @@ export function buildNarrativeAnalysis(args: {
   // 中和态需按 strength.isStrong（supportRatio>=0.5 的二次区分，见 scoring.ts）
   // 区分偏强/偏弱措辞，不能无脑说"大致平衡"——否则会与同一份报告里用神取用
   // （如病药法"比劫重重为病，宜克制"）明确给出的偏强/偏弱结论自相矛盾。
+  // 注意：败格中含七杀无制、官杀混杂等格局信号时，"以生扶为宜"的旺衰建议
+  // 与格局层面的"制化七杀/理清官杀"建议会产生方向矛盾，需在偏弱文案末尾
+  // 加注"但格局用神方向优先"的提示，避免用户对"生扶"建议产生误读。
+  // 依据：《子平真诠》"用神者，格局取用之纲，旺衰仅为参考，不可凌驾格局之上"
   if (strength.level === "中和") {
-    overview.push(
-      strength.isStrong
-        ? `日主中和偏强（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以克泄耗为宜，需结合格局与用神再定取舍。`
-        : `日主中和偏弱（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以生扶为宜，需结合格局与用神再定取舍。`
-    );
+    const patternBrokenReasonForOverview = pattern.outcome === "败格"
+      ? (pattern.reasons.slice(-1)[0] ?? "") : "";
+    const hasKillerConflict =
+      patternBrokenReasonForOverview.includes("七杀旺而无") ||
+      patternBrokenReasonForOverview.includes("遇杀无制") ||
+      patternBrokenReasonForOverview.includes("官杀混杂");
+    if (strength.isStrong) {
+      overview.push(`日主中和偏强（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以克泄耗为宜，需结合格局与用神再定取舍。`);
+    } else if (hasKillerConflict) {
+      // 七杀无制/官杀混杂败格中：日主偏弱但格局用神方向（制杀/化杀）优先于"生扶"建议
+      // 依据：《子平真诠》"七杀格无制，不论身强身弱，救格之道在制化而非单纯扶身"
+      overview.push(`日主中和偏弱（扶抵占比${Math.round(strength.supportRatio * 100)}%），旺衰角度倾向生扶，但本命格局败格，宜优先依格局用神救格（制杀/化杀），而非单纯扶助日主。`);
+    } else {
+      overview.push(`日主中和偏弱（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以生扶为宜，需结合格局与用神再定取舍。`);
+    }
   }
 
   const career: string[] = [];
@@ -409,7 +423,10 @@ export function buildNarrativeAnalysis(args: {
       // ——成格/待观察：以十神偏重推断优势方向——
       // 仅在无破格矛盾时，按十神偏重给出正向建议
       // 依据：《子平真诠》各格取用原则
-      if (officerScore >= 2) {
+      // 正官格/七杀格已有格局专属文案（更精确），跳过通用"官杀信息偏重"文案
+      // 依据：《子平真诠》"正官格宜官印相生，七杀格宜食神制杀，通论'适合规则边界'过于笼统"
+      const isOfficerKillerPattern = pattern.name === "正官格" || pattern.name === "七杀格";
+      if (officerScore >= 2 && !isOfficerKillerPattern) {
         career.push("官杀信息偏重，做事倾向看重秩序、责任与结果，适合有规则边界的岗位。");
       }
       if (resourceScore >= 2) {
@@ -420,6 +437,13 @@ export function buildNarrativeAnalysis(args: {
       }
       // 成格格局专属核心路径（依《子平真诠》各格取用的职业方向）
       // 先给出格局专属一条定性建议，再追加"格局清纯"的总结
+      // 注意：当格局为正官格/七杀格时，通用"官杀信息偏重"文案与专属文案语义重叠，
+      // 应跳过通用文案，只保留格局专属文案（更精确、更具体）。
+      // 依据：《子平真诠》"格局取用专一，通论不及格局取用之精确"
+      const officerPatternNames = new Set(["正官格", "七杀格"]);
+      // 财格（正财/偏财）中格局专属文案已包含"稳健经营/流通八方"信息，
+      // 通用"食伤活跃"文案与财格的逻辑并无冲突但重复度较高，保留即可
+      // 只对官杀格做专属去重
       switch (pattern.name) {
         case "正官格":
           // 《子平真诠》"正官格，官印相生者贵，宜仕途、管理、有规则边界之职"
@@ -466,8 +490,8 @@ export function buildNarrativeAnalysis(args: {
           career.push("羊刃格有制，刚烈之气得以约束且善加利用，适合军警、外科、竞技体育或高压高风险的专业领域。");
           break;
       }
-      career.push("格局清纯，事业发展宜顺势强化优势领域。");
-      // 比劫偏重推荐合伙：仅当日主五行在用神中（比劫已被取为用神，说明身弱需同气扶助）
+      // 比劫偏重推荐合伙（在"格局清纯"总结之前输出，使逻辑更连贯）：
+      // 仅当日主五行在用神中（比劫已被取为用神，说明身弱需同气扶助）
       // 或用神明确包含比劫且非财格（财格比劫偏重是破财信号而非合伙优势，不宜推荐合伙）
       // 依据：《子平真诠》"财格见比劫为忌，官制比劫则财可保；印格、建禄格比劫为用神则宜合伙"
       const isWealthPattern = pattern.name === "正财格" || pattern.name === "偏财格";
@@ -475,6 +499,8 @@ export function buildNarrativeAnalysis(args: {
       if (peerIsYongShen && !isWealthPattern && peerScore >= 2) {
         career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
       }
+      // "格局清纯"总结放在最后，作为成格结语
+      career.push("格局清纯，事业发展宜顺势强化优势领域。");
     }
   }
   if (career.length === 0) {
@@ -503,10 +529,43 @@ export function buildNarrativeAnalysis(args: {
     }
   } else {
     // 正格 wealth 分析（阈值降至 >=2，与 career 维度保持一致）
+    // 破格病灶识别：防止将"病灶"推荐为优势
+    const wealthBrokenReason = pattern.outcome === "败格" ? (pattern.reasons.slice(-1)[0] ?? "") : "";
+    // 印格（正印格/偏印格）败格原因是财星破印时，财星多是病灶，不应推荐"财星活跃利于经营"
+    // 依据：《子平真诠》"印格忌财，财来破印，不可以财为用"
+    const isResourcePatternBroken = wealthBrokenReason.includes("财星透出，印星受克");
+    // 财格判定：在 wealth 分析中独立声明，避免依赖 career 分支中的同名变量（作用域不同）
+    const isWealthPattern = pattern.name === "正财格" || pattern.name === "偏财格";
+    // 财格败格判定（用于 wealth 分析）：财格破格常因比劫夺财，财星虽活跃但已是"被分之财"
+    // 依据：《子平真诠》"财格见比劫而无官星制衡，财旺亦难持久，以警示为主"
+    const isWealthPatternBroken = isWealthPattern && pattern.outcome === "败格";
     if (wealthScore >= 2) {
-      wealth.push("财星活跃，命盘对资源、项目、交易和现金流更敏感，利于经营意识的培养。");
+      if (isResourcePatternBroken) {
+        // 印格被财破：财星活跃是破格病灶，应警示而非推荐
+        wealth.push("命局财星活跃但印格遭财破，财务事务容易分散精力、干扰专业积累；宜以技能立身，避免分心于资金经营或投资，待印旺大运方能驾驭财星。");
+      } else if (isWealthPatternBroken) {
+        // 财格败格（比劫夺财）：财星活跃但已被比劫分夺，不应推荐"利于经营"
+        // 败格财格的财星是"被竞争分夺的财"，应警示而非正向推荐
+        // 依据：《子平真诠》"正财格，比劫为大忌，财旺无官制，守财难，宜候官星大运"
+        wealth.push("财星活跃但格局遭比劫破，财富虽有却难以独享；宜等官星大运到来制衡比劫，届时财路方能稳固，避免辛苦所得被分摊或失控。");
+      } else if (isWealthPattern && peerScore >= 2) {
+        // 财格成格 + 财星活跃 + 比劫偏多：
+        // 财多而比劫争夺，两者并存是"财旺被分"的警示场景
+        // 依据：《子平真诠》"正财格，比劫为大忌，财旺而比劫透，需官星制劫方能守财"
+        wealth.push("财星活跃而比劫偏多，财富机会与竞争分夺并存；财格最忌比劫分财，宜等官星透出或大运引入官星制劫，方能稳住财源，避免得而复失。");
+      } else if (!isWealthPattern && peerScore >= 2) {
+        // 非财格中：财星活跃 + 比劫偏多，并非直接矛盾（非财格不以财为本），
+        // 但两者分开各说一条略显冗余，合并为"挣多分多"的综合提示更连贯
+        // 依据：《子平真诠》"比劫者，夺财之神，财旺而比劫重，则财路虽宽而难以独享"
+        wealth.push("财星活跃，对资源与现金流敏感；但比劫偏多，财来财往分摊比例也高，需注意合伙成本与人际分利，独立经营时反而更容易守住收益。");
+      } else {
+        wealth.push("财星活跃，命盘对资源、项目、交易和现金流更敏感，利于经营意识的培养。");
+      }
     }
-    if (peerScore >= 2) {
+    // 比劫偏多（财星不活跃时单独输出）
+    // 当 wealthScore >= 2 时，已在上方各分支中合并处理（财格：警示合并；非财格：综合提示）
+    // 仅当 wealthScore < 2 时才单独输出比劫偏多文案
+    if (peerScore >= 2 && wealthScore < 2) {
       wealth.push("比劫偏多，拿项目、做合伙、争资源的动力强，但也要防止分财与成本失控。");
     }
     if (yongShen.yongShen.includes(CONTROLLING[dayMaster.element])) {
