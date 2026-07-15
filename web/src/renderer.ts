@@ -480,19 +480,28 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
     { key: "wealth", label: "财富", icon: "💰" }
   ];
 
+  // “整体”维度卡片必须与顶部大标签（overallTone）同一套结论，否则用户展开
+  // 卡片会看到顶部“好”而“整体”维度格子却是“差”这种同一处流年内部自相矛盾
+  // 的展示——corrected（40%透出+25%十神+20%冲合刑害+10%调候）是本报告大运
+  // 总览/关键年份/人生节奏三处都已统一采用的口径，此处“整体”维度也必须对齐，
+  // 其余四个维度（事业/感情/健康/财富）本就没有对应的 corrected 分量，继续用
+  // 引擎原始 tone。
+  const overallTone = corrected ? corrected.tone : a.analysis.overall.tone;
+
   const dimSections = dims.map(d => {
     const dim = (a.analysis as Record<string, { tone: string; summary: string[] }>)[d.key];
     if (!dim) return "";
+    const tone = d.key === "overall" ? overallTone : dim.tone;
     const summaries = pickReportLines(dim.summary, d.key === "overall" ? 2 : 1);
     const detailsHtml = summaries.length > 0
       ? `<ul class="dim-details">${summaries.map(s => `<li>${s}</li>`).join("")}</ul>`
       : `<p class="dim-empty">无明显触发信号</p>`;
     return `
-      <div class="annual-dim ${dim.tone}">
+      <div class="annual-dim ${tone}">
         <div class="annual-dim-header">
           <span class="dim-icon">${d.icon}</span>
           <span class="dim-label">${d.label}</span>
-          ${toneLabel(dim.tone)}
+          ${toneLabel(tone)}
         </div>
         ${detailsHtml}
       </div>`;
@@ -506,8 +515,6 @@ function renderAnnualDetail(a: { year: number; age: number; ganZhi: string; anal
         ${signals.map(s => `<span class="signal-tag ${s.tone}" title="${s.description}">${s.type}</span>`).join("")}
       </div>
     </div>` : "";
-
-  const overallTone = corrected ? corrected.tone : a.analysis.overall.tone;
   const breakdownHtml = corrected ? `<div class="score-breakdown"><span class="score-value">${corrected.score >= 0 ? '+' : ''}${corrected.score.toFixed(1)}</span> <span class="score-formula">${corrected.breakdown}</span></div>` : "";
 
   return `

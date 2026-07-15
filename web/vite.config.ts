@@ -4,7 +4,8 @@ import path from "path";
 export default defineConfig({
   root: __dirname,
   server: {
-    host: true
+    host: true,
+    allowedHosts: true
   },
   resolve: {
     alias: {
