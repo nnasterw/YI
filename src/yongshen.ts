@@ -1,4 +1,4 @@
-import { HIDDEN_STEM_WEIGHTS, STEM_META, computeTenGod } from "./constants";
+import { HIDDEN_STEM_WEIGHTS, STEM_META, TIAO_HOU_TABLE, computeTenGod } from "./constants";
 import { CONTROLLING, GENERATING, reverseControlling, reverseGenerating } from "./scoring";
 import type {
   Element,
@@ -118,23 +118,65 @@ function selectByBingYao(
   return null;
 }
 
-/** 调候法：以月支寒暖燥湿判断是否需要专门的水火来调和气候 */
-function selectByTiaoHou(monthBranch: string): YongShenMethodResult | null {
+/**
+ * 调候法：查《穷通宝鉴》十天干分月调候用神表（TIAO_HOU_TABLE），
+ * 以“日主天干 + 生月地支”精确定位该日主在该月最需要的调候用神天干，
+ * 取表中优先级最高（数组首项）的一组天干对应之五行为用。
+ * 相比此前仅按夏月取水、冬月取火的季节两分法，此法能区分同季不同月、
+ * 不同日主的调候差异（例如同为夏月，丙火生午月专用壬水，丁火生午月却壬癸并用），
+ * 判断更贴合穷通宝鉴原意；120组日主×月支组合已全覆盖，任意月份均能查得结果。
+ *
+ * 但“查得到调候用神”不等于“调候法应凌驾于扶抑法之上”——穷通宝鉴原文体例
+ * 对每个月都给出调候建议，是因为一年十二月气候本就各有偏向（如春木喜水润、
+ * 秋金喜火煅），属于常规的辅助参考；真正让穷通宝鉴主张“调候优先于扶抑格局”
+ * 的前提，是隆冬盛夏这类寒暖燥湿已严重失衡、足以掣肘全局的极端时令
+ * （夏令巳午未火气炎燥、冬令亥子丑水气寒凝）。若不加区分地让 120 组查表结果
+ * 一律升级为主导方法，会导致春秋月份（气候相对温和）也压过扶抑法，使
+ * “身强身弱”这一命局根本定性反而沦为陪衬，明显偏离原意。故用 isDominant
+ * 标记只有夏/冬令月份的调候结果才具备与扶抑法竞争主导权的资格；春秋月份的
+ * 查表结果依旧精确计算并保留在 methods 参考列表中，但不参与 primary 竞选。
+ */
+function selectByTiaoHou(
+  dayStem: string,
+  monthBranch: string
+): (YongShenMethodResult & { isDominant: boolean }) | null {
   const summerBranches = ["巳", "午", "未"];
   const winterBranches = ["亥", "子", "丑"];
+  const isExtreme = summerBranches.includes(monthBranch) || winterBranches.includes(monthBranch);
 
+  const levels = TIAO_HOU_TABLE[`${dayStem}${monthBranch}`];
+  if (levels && levels.length > 0) {
+    const primaryStems = levels[0].split("");
+    const elements = [...new Set(primaryStems.map((stem) => STEM_META[stem].element))];
+    const stemsLabel = primaryStems.join("、");
+    const seasonNote = isExtreme
+      ? summerBranches.includes(monthBranch)
+        ? "，时值夏令火气炎燥"
+        : "，时值冬令水气寒凝"
+      : "";
+    return {
+      method: "调候",
+      elements,
+      reason: `日主${dayStem}生于${monthBranch}月${seasonNote}，据《穷通宝鉴》调候用神表，首取${stemsLabel}为调候之用。`,
+      isDominant: isExtreme
+    };
+  }
+
+  // 兜底：查表异常时退回季节粗判（正常情况下不会触发）
   if (summerBranches.includes(monthBranch)) {
     return {
       method: "调候",
       elements: ["水"],
-      reason: `生于${monthBranch}月，火气当令炎燥，宜取水润泽调候。`
+      reason: `生于${monthBranch}月，火气当令炎燥，宜取水润泽调候。`,
+      isDominant: true
     };
   }
   if (winterBranches.includes(monthBranch)) {
     return {
       method: "调候",
       elements: ["火"],
-      reason: `生于${monthBranch}月，水气当令寒凝，宜取火温暖调候。`
+      reason: `生于${monthBranch}月，水气当令寒凝，宜取火温暖调候。`,
+      isDominant: true
     };
   }
   return null;
@@ -166,9 +208,18 @@ function selectByTongGuan(counts: Record<Element, number>): YongShenMethodResult
 }
 
 /**
- * 用神综合评估：四法合参，优先级为 病药 > 调候 > 通关 > 扶抑。
+ * 用神综合评估：四法合参，优先级为 病药 > 调候（仅夏冬极令）> 通关 > 扶抑。
  * 这一优先级顺序反映了命理分析中的常见取用思路——先解命局明显的结构性病灶，
- * 再看气候是否失衡，再看两行是否对峙需要通关，最后才回到常规的扶抑判断兜底。
+ * 再看气候是否严重失衡到需要优先调候，再看两行是否对峙需要通关，最后才回到
+ * 常规的扶抑判断兜底。
+ *
+ * 关键点：调候法能否升级为“压过扶抑法”的主导方法，取决于 selectByTiaoHou
+ * 返回的 isDominant——只有生于夏令（巳午未）、冬令（亥子丑）这类寒暖燥湿已
+ * 严重失衡的月份，调候才具备穷通宝鉴所说“首重调候，其次论旺衰”的前提；
+ * 春秋月份气候相对温和，即便查表能给出更精确的调候用神（穷通宝鉴对十二月
+ * 均有条目），也只是常规参考，不能反过来压制“身强身弱”这一命局根本定性，
+ * 否则会导致扶抑法在绝大多数样本中都无法成为主导方法。isDominant=false 的
+ * 调候结果仍会计入 methods 供参考展示，只是不参与 primary 竞选。
  */
 export function assessYongShen(
   pillars: PillarDetails[],
@@ -176,6 +227,7 @@ export function assessYongShen(
   strength: StrengthAssessment,
   pattern?: PatternAssessment
 ): YongShenAssessment {
+  const dayStem = pillars.find((pillar) => pillar.key === "day")!.stem.value;
   const monthBranch = pillars.find((pillar) => pillar.key === "month")!.branch.value;
 
   const counts: Record<Element, number> = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
@@ -190,13 +242,19 @@ export function assessYongShen(
 
   const fuyi = selectByFuYi(dayElement, strength);
   const bingyao = selectByBingYao(pillars, dayElement, strength);
-  const tiaohou = selectByTiaoHou(monthBranch);
+  const tiaohouRaw = selectByTiaoHou(dayStem, monthBranch);
   const tongguan = selectByTongGuan(counts);
+
+  // 仅夏冬极令（isDominant=true）的调候结果才具备与扶抑法竞争主导权的资格；
+  // 春秋月份的查表结果降级为普通参考方法（tiaohouRef），不参与 primary 竞选。
+  const tiaohou = tiaohouRaw?.isDominant ? tiaohouRaw : null;
+  const tiaohouRef = tiaohouRaw && !tiaohouRaw.isDominant ? tiaohouRaw : null;
 
   const methods: YongShenMethodResult[] = [fuyi];
   if (bingyao) methods.unshift(bingyao);
   if (tongguan) methods.splice(bingyao ? 1 : 0, 0, tongguan);
   if (tiaohou) methods.splice(bingyao ? 1 : 0, 0, tiaohou);
+  if (tiaohouRef) methods.push(tiaohouRef);
 
   let primary: YongShenMethodResult;
   if (bingyao) {
