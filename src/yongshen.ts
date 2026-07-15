@@ -98,11 +98,28 @@ function selectByBingYao(
   }).length;
 
   if (officerCount >= 2) {
-    const cure = GENERATING[dayElement]; // 印星：生我者，化杀生身
+    const cure = GENERATING[dayElement]; // 印星：生我者，化官杀生身
+    // 判断是"真正官杀混杂"（正官+七杀并存）还是单一官/杀过多
+    // 依据：《子平真诠》"官杀混杂，以印化之"——此为官+杀并存；
+    //        "七杀重叠，食神制之或印化之"——此为纯七杀过多；
+    //        "正官太多，反变杀格"——正官过多需以印安其势
+    const hasZhengGuan = pillars.some(p => p.key !== "day" && computeTenGod(dayStem, p.stem.value) === "正官");
+    const hasQiSha = pillars.some(p => p.key !== "day" && computeTenGod(dayStem, p.stem.value) === "七杀");
+    let bingReason: string;
+    if (hasZhengGuan && hasQiSha) {
+      // 正官+七杀并存：官杀混杂，印化为药
+      bingReason = `官杀混杂为局中之病（${officerCount}位，正官七杀并存），宜取印星${cure}化官杀、安日主以为药。`;
+    } else if (hasQiSha) {
+      // 纯七杀过多：取印化杀为首选
+      bingReason = `七杀偏重为局中之病（${officerCount}位），宜取印星${cure}化杀生身以为药。`;
+    } else {
+      // 纯正官过多：正官多则力量分散，以印安其势
+      bingReason = `正官太多反失纯粹为局中之病（${officerCount}位），宜取印星${cure}安官护身以为药。`;
+    }
     return {
       method: "病药",
       elements: [cure],
-      reason: `官杀混杂为局中之病（${officerCount}位），宜取印星${cure}化杀生身以为药。`
+      reason: bingReason
     };
   }
   if (peerCount >= 2 && isStrong) {
