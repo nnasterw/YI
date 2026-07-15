@@ -587,8 +587,12 @@ export function buildNarrativeAnalysis(args: {
       // 或用神明确包含比劫且非财格（财格比劫偏重是破财信号而非合伙优势，不宜推荐合伙）
       // 依据：《子平真诠》"财格见比劫为忌，官制比劫则财可保；印格、建禄格比劫为用神则宜合伙"
       const isWealthPattern = pattern.name === "正财格" || pattern.name === "偏财格";
+      // 建禄格核心是"日主身旺、靠自身实力立命"，格局专属文案已指向独立创业/凭本事出头
+      // 建禄格+比劫为用神的情况下，格局主张独立而用神主张合伙，产生方向矛盾，排除建禄格
+      // 依据：《子平真诠》"建禄格以财官为贵，取用以官杀、财星为正用，比劫为辅助而非主路"
+      const isJianLuPattern = pattern.name === "建禄格";
       const peerIsYongShen = yongShen.yongShen.includes(dayMaster.element);
-      if (peerIsYongShen && !isWealthPattern && peerScore >= 2) {
+      if (peerIsYongShen && !isWealthPattern && !isJianLuPattern && peerScore >= 2) {
         career.push("命局比劫或同气力量参与用神取用，适合团队协作、合伙经营或需要人脉资源整合的路径。");
       }
       // 格局清纯结语：仅在已有≥2条有实质内容时才输出（避免唯一的第2条是废话）
