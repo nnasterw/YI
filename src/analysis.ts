@@ -972,16 +972,30 @@ export function buildNarrativeAnalysis(args: {
       "金": { excess: "肺气过旺，容易皮肤干燥、鼻咽敏感或呼吸道问题", deficient: "肺气偏弱，抵抗力相对有限，呼吸道和皮肤的外邪防御需要加强" },
       "水": { excess: "肾水偏旺，容易腰膝酸软、下焦湿寒或精神内敛过度", deficient: "肾气偏弱，容易腰背无力、精力续航短或睡眠质量不稳" }
     };
-    for (const el of elementBalance.strongest) {
-      if (ORGAN_MAP[el]) {
-        health.push(`五行以${el}偏盛为主，对应${ORGAN_MAP[el].excess}，宜适度疏散调节。`);
-        break; // 只取最偏盛的一条
+    // 检查strongest与weakest是否有重叠（五行相对平衡时max===min，两组都含所有元素）
+    const strongestSet = new Set(elementBalance.strongest);
+    const weakestSet = new Set(elementBalance.weakest);
+    const hasOverlap = [...strongestSet].some(el => weakestSet.has(el));
+
+    if (hasOverlap) {
+      // 五行分布接近均衡，不输出相互矛盾的偏盛/偏弱，改为通用养生建议
+      health.push("五行分布趋于均衡，整体健康维护以作息规律为要，顺时养生、不偏不倚即可。");
+    } else {
+      // 偏盛：取第一个有脏腑对应的五行输出
+      let strongestOutputEl: string | null = null;
+      for (const el of elementBalance.strongest) {
+        if (ORGAN_MAP[el]) {
+          health.push(`五行以${el}偏盛为主，对应${ORGAN_MAP[el].excess}，宜适度疏散调节。`);
+          strongestOutputEl = el;
+          break; // 只取最偏盛的一条
+        }
       }
-    }
-    for (const el of elementBalance.weakest) {
-      if (ORGAN_MAP[el]) {
-        health.push(`五行以${el}偏弱为主，对应${ORGAN_MAP[el].deficient}，宜注意补益维护。`);
-        break; // 只取最偏弱的一条
+      // 偏弱：跳过已输出偏盛的同一元素，避免矛盾
+      for (const el of elementBalance.weakest) {
+        if (el !== strongestOutputEl && ORGAN_MAP[el]) {
+          health.push(`五行以${el}偏弱为主，对应${ORGAN_MAP[el].deficient}，宜注意补益维护。`);
+          break; // 只取最偏弱的一条
+        }
       }
     }
   }
