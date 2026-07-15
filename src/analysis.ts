@@ -241,6 +241,7 @@ export function buildNarrativeAnalysis(args: {
   pattern: PatternAssessment;
   yongShen: YongShenAssessment;
   shenSha: ShenShaRecord[];
+  gender: Gender;
 }): BaziAnalysis {
   const {
     dayMaster,
@@ -253,6 +254,7 @@ export function buildNarrativeAnalysis(args: {
     strength,
     pattern,
     yongShen,
+    gender,
     shenSha
   } = args;
 
@@ -431,6 +433,39 @@ export function buildNarrativeAnalysis(args: {
   if (tenseRelation) {
     relationships.push(`日支出现${tenseRelation.type}，情感关系里更要留意节奏拉扯、误解累积和边界冲撞。`);
   }
+
+  // 正格：基于十神的 relationships 信号（依《子平真诠》《三命通会》）
+  // 正财旺：男命正财代表配偶，旺而有用则婚配和谐；正官旺：女命正官代表配偶
+  // 依据：《子平真诠》"正财旺、正官旺者，男女婚配皆主和谐"
+  //       《三命通会》"财星得令，妻贤；官星得令，夫荣"
+  if (pattern.category !== "变格") {
+    const zhengCaiCount = tenGodDistribution.counts["正财"] ?? 0;
+    const zhengGuanCount = tenGodDistribution.counts["正官"] ?? 0;
+    const shangGuanCount = tenGodDistribution.counts["伤官"] ?? 0;
+    const qiShaCount = tenGodDistribution.counts["七杀"] ?? 0;
+
+    if (gender === "male" && zhengCaiCount >= 2) {
+      // 男命正财多：多妻缘或感情场拉扯，财多身弱则反为负担
+      if (strength.isStrong) {
+        relationships.push("命局正财多而日主有力，感情机缘较丰，能承接财星代表的配偶与资源能量，婚缘较顺。");
+      } else {
+        relationships.push("命局正财偏多而日主气弱，财星反成负担，感情中容易被动受牵制；先固根基再拓展关系。");
+      }
+    }
+    if (gender === "female" && zhengGuanCount >= 2) {
+      // 女命正官多：或婚姻关系多番，或感情中对规则与责任较敏感
+      relationships.push("命局正官偏多，感情中对规则、承诺与责任感的需求较强；大运逢官星旺地，婚配议题易被激活。");
+    }
+    if (gender === "female" && qiShaCount >= 2 && zhengGuanCount === 0) {
+      // 女命七杀旺而无正官：感情偏向强势有吸引力的对象，关系容易高张力
+      relationships.push("命局七杀偏重而无正官制化，感情模式偏向高张力、强吸引的类型；需留意关系节奏过快或情绪拉锯。");
+    }
+    if (shangGuanCount >= 2 && (gender === "female" ? zhengGuanCount > 0 : true)) {
+      // 伤官旺：感情表达直接锋利，容易因言辞产生摩擦（女命伤官见官更甚）
+      relationships.push("命局伤官活跃，感情中情绪和言辞容易外露；优点是真实直接，但也需注意边界与表达方式，避免无意中刺伤亲密关系。");
+    }
+  }
+
   const taoHua = shenSha.find((record) => record.name === "桃花");
   if (taoHua) {
     relationships.push(`命局带桃花神煞（见于${taoHua.hitPillars.join("、")}），异性缘或人际吸引力相对突出，也更需留意情感边界。`);

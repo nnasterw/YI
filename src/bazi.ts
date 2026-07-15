@@ -298,7 +298,8 @@ export function generateBaziProfile(rawInput: BaziInput): BaziProfile {
     strength: strengthAssessment,
     pattern,
     yongShen,
-    shenSha
+    shenSha,
+    gender: input.gender
   });
 
   return {
