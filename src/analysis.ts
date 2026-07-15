@@ -478,9 +478,14 @@ export function buildNarrativeAnalysis(args: {
     relationships.push(DIMENSION_FALLBACK.relationships);
   }
 
+  // 健康五行底色（通用引言，后续根据正格/变格分支提供具体脏腑建议）
+  // 依据：《黄帝内经》"五行各归其脏，偏盛则亢，偏弱则虚，寒热燥湿由此而判"
   const strongest = elementBalance.strongest.join("、");
   const weakest = elementBalance.weakest.join("、");
-  health.push(`健康观察上，先看${strongest}偏盛与${weakest}偏弱对应的寒热燥湿失衡。`);
+  // 只有在变格时才用通用五行引言，正格分支由下方脏腑文案直接承接（避免重复）
+  if (pattern.category === "变格") {
+    health.push(`健康底色上，${strongest}偏盛、${weakest}偏弱构成寒热燥湿的基础格局，结合变格格局特征一并考量。`);
+  }
 
   // 变格专属 health 文案（依《子平真诠》《三命通会》各变格格局体质倾向）
   if (pattern.category === "变格") {
@@ -516,6 +521,29 @@ export function buildNarrativeAnalysis(args: {
       health.push("日主偏弱，整体抗压耐受度相对有限，作息规律和体力储备上更需要留有余量。");
     } else {
       health.push("日主偏旺，精力充沛的同时也容易情绪或气血过亢，宜适度疏泄、避免长期硬扛。");
+    }
+
+    // 五行脏腑对应建议（依《黄帝内经》五脏五行对应）：
+    // 木→肝胆、火→心小肠、土→脾胃、金→肺大肠、水→肾膀胱
+    // 偏盛则过亢，偏弱则不足，取最偏（strongest/weakest）各给一条健康提示
+    const ORGAN_MAP: Record<string, { excess: string; deficient: string }> = {
+      "木": { excess: "肝气偏亢，容易情绪急躁、眼睛疲劳或筋肌紧张", deficient: "肝血偏弱，容易眼睛干涩、筋骨不够柔韧或情绪郁结不舒" },
+      "火": { excess: "心火偏旺，容易心悸、睡眠浅或情绪波动大", deficient: "心阳偏弱，容易疲倦乏力、手脚怕冷或心气提不起来" },
+      "土": { excess: "脾胃湿热偏重，容易消化积滞、四肢沉重或体湿困顿", deficient: "脾胃偏弱，消化吸收和气血生化能力有限，容易食欲不振、体力不续" },
+      "金": { excess: "肺气过旺，容易皮肤干燥、鼻咽敏感或呼吸道问题", deficient: "肺气偏弱，抵抗力相对有限，呼吸道和皮肤的外邪防御需要加强" },
+      "水": { excess: "肾水偏旺，容易腰膝酸软、下焦湿寒或精神内敛过度", deficient: "肾气偏弱，容易腰背无力、精力续航短或睡眠质量不稳" }
+    };
+    for (const el of elementBalance.strongest) {
+      if (ORGAN_MAP[el]) {
+        health.push(`五行以${el}偏盛为主，对应${ORGAN_MAP[el].excess}，宜适度疏散调节。`);
+        break; // 只取最偏盛的一条
+      }
+    }
+    for (const el of elementBalance.weakest) {
+      if (ORGAN_MAP[el]) {
+        health.push(`五行以${el}偏弱为主，对应${ORGAN_MAP[el].deficient}，宜注意补益维护。`);
+        break; // 只取最偏弱的一条
+      }
     }
   }
   const yangRen = shenSha.find((record) => record.name === "羊刃");
