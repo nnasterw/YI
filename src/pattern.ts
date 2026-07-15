@@ -137,6 +137,61 @@ export function determinePattern(
     name = variant.name;
     category = "变格";
     reasons.push(variant.reason);
+    // 变格覆盖 governingTenGod/governingStem：变格名称已不再以月令本气为纲，
+    // 而是以主导命局走势的旺神为纲。若仍保留月令本气的十神，会导致 overview 出现
+    // "以正财为纲"/"以食神为纲"等与"从杀格"/"从强格"实质矛盾的叙述。
+    // 注意：governingStem 标记为 dayStem 仅为占位，因为变格中真正的纲领是五行类别
+    // 而非某根具体天干；isRevealed 改为 true 因为变格的判定已明确旺神存在。
+    switch (variant.name) {
+      case "从强格":
+        // 从强格以日主同气及印星为用，纲领即日主自身
+        governingTenGod = "比肩";
+        governingStem = dayStem;
+        break;
+      case "从财格":
+        // 从财格以财星为纲，找命局中力量最强的财星天干（透出优先）
+        {
+          const caiStems = pillars
+            .map(p => p.stem.value)
+            .filter(s => { const tg = computeTenGod(dayStem, s); return tg === "正财" || tg === "偏财"; });
+          if (caiStems.length > 0) {
+            governingStem = caiStems[0];
+            governingTenGod = computeTenGod(dayStem, governingStem);
+          } else {
+            governingTenGod = "正财";
+          }
+        }
+        break;
+      case "从杀格":
+        // 从杀格以官杀为纲，找命局中力量最强的官杀天干（透出优先）
+        {
+          const shaStems = pillars
+            .map(p => p.stem.value)
+            .filter(s => { const tg = computeTenGod(dayStem, s); return tg === "正官" || tg === "七杀"; });
+          if (shaStems.length > 0) {
+            governingStem = shaStems[0];
+            governingTenGod = computeTenGod(dayStem, governingStem);
+          } else {
+            governingTenGod = "七杀";
+          }
+        }
+        break;
+      case "从儿格":
+        // 从儿格以食伤为纲，找命局中力量最强的食伤天干（透出优先）
+        {
+          const shiStems = pillars
+            .map(p => p.stem.value)
+            .filter(s => { const tg = computeTenGod(dayStem, s); return tg === "食神" || tg === "伤官"; });
+          if (shiStems.length > 0) {
+            governingStem = shiStems[0];
+            governingTenGod = computeTenGod(dayStem, governingStem);
+          } else {
+            governingTenGod = "食神";
+          }
+        }
+        break;
+    }
+    isRevealed = true;
   }
 
   const outcome = evaluatePatternOutcome(pillars, name, dayStem, allStems);
