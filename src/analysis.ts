@@ -432,18 +432,34 @@ export function buildNarrativeAnalysis(args: {
       // 羊刃格本身以"有制"（官杀制刃）为格局核心，通用"官杀信息偏重"语义重叠，跳过
       // 依据：《子平真诠》"羊刃格，官杀制刃为贵，格局专属文案已覆盖此信息"
       const isYangRenPattern = pattern.name === "羊刃格";
-      if (officerScore >= 2 && !isOfficerKillerPattern && !isOutputPattern && !isYangRenPattern) {
+      // 建禄格专属文案"财官为用，靠自身实力立命"已含官星核心义，通用"官杀信息偏重"语义重叠，跳过
+      // 依据：《子平真诠》"建禄格以财官为用，格局专属文案已定性"
+      // 财格（正财/偏财）以财星为纲，官星护财为辅，通用"官杀偏重/规则边界"偏离财格主线，跳过
+      // 依据：《子平真诠》"财格之取用，财星为主，官护财为辅；通论'适合规则边界'非财格重心"
+      // 偏印格专属"偏门技艺独到"定性为自由探索领域，"官杀偏重/适合规则边界"与此方向相悖，跳过
+      // 依据：《子平真诠》"偏印格，偏枭者，走偏门技艺；官星压制偏印，反而束缚才华，不应推荐规则职场"
+      const isWealthOrLuPattern = pattern.name === "建禄格" || pattern.name === "正财格" || pattern.name === "偏财格" || pattern.name === "偏印格";
+      if (officerScore >= 2 && !isOfficerKillerPattern && !isOutputPattern && !isYangRenPattern && !isWealthOrLuPattern) {
         career.push("官杀信息偏重，做事倾向看重秩序、责任与结果，适合有规则边界的岗位。");
       }
       // 正印格/偏印格专属文案已充分描述印星优势路径，跳过通用"印星支持较足"避免冗余
       // 依据：《子平真诠》"正印格官印相生，偏印格偏门技艺，格局专属文案已定性"
-      const isResourcePattern = pattern.name === "正印格" || pattern.name === "偏印格";
+      // 正官格专属"官印相生路最顺"已内含印星的作用，通用"印星支持较足"构成语义重叠，跳过
+      // 依据：《子平真诠》"正官格，官印相生者贵；专属文案已囊括印星价值，无需再通论"
+      const isResourcePattern = pattern.name === "正印格" || pattern.name === "偏印格" || pattern.name === "正官格";
       if (resourceScore >= 2 && !isResourcePattern) {
         career.push("印星支持较足，学习吸收、证照积累、方法论沉淀往往能放大事业稳定性。");
       }
       // 食神格/伤官格专属文案已包含"输出能力"核心信息，跳过通用"食伤较活跃"文案避免冗余
       // 依据：《子平真诠》"食神格才艺输出，伤官格才华卓绝，通论不及格局专属精准"
-      if (outputScore >= 2 && !isOutputPattern) {
+      // 七杀格以"制杀/化杀"为核心取用路径，通用"食伤较活跃/适合表达创作"偏向食伤格取用方向，
+      // 与七杀格主攻竞争高压赛道的定性存在方向错位，跳过
+      // 依据：《子平真诠》"七杀格，食神制杀为贵；制杀是手段，非以表达为志业"
+      // 正印格以印绶为纲，食伤活跃意味着"食伤泄印"（不利），不应推荐"适合表达创作"路线
+      // 依据：《子平真诠》"正印格，印旺者不宜食伤泄秀；食伤过旺，耗损印气，为忌"
+      const isQishaPattern = pattern.name === "七杀格";
+      const isZhengyinPattern = pattern.name === "正印格";
+      if (outputScore >= 2 && !isOutputPattern && !isQishaPattern && !isZhengyinPattern) {
         career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
       }
       // 成格格局专属核心路径（依《子平真诠》各格取用的职业方向）
@@ -753,7 +769,23 @@ export function buildNarrativeAnalysis(args: {
   const weakest = elementBalance.weakest.join("、");
   // 只有在变格时才用通用五行引言，正格分支由下方脏腑文案直接承接（避免重复）
   if (pattern.category === "变格") {
-    health.push(`健康底色上，${strongest}偏盛、${weakest}偏弱构成寒热燥湿的基础格局，结合变格格局特征一并考量。`);
+    // 变格五行描述改为直接点明对应脏腑倾向，为后续格局专属文案提供具体五行背景
+    // 依据：《黄帝内经》"五脏应五行，偏盛者亢，偏弱者虚"
+    const ORGAN_SHORT: Record<string, { excess: string; deficient: string }> = {
+      "木": { excess: "肝气偏亢（易急躁、眼疲劳）", deficient: "肝血偏弱（易眼干、筋紧）" },
+      "火": { excess: "心火偏旺（易心悸、睡眠浅）", deficient: "心阳偏弱（易乏力、怕冷）" },
+      "土": { excess: "脾胃湿热（易积滞、体重）", deficient: "脾胃偏弱（易消化差、续航短）" },
+      "金": { excess: "肺气过旺（易皮肤干燥、鼻咽敏感）", deficient: "肺气偏弱（易感冒、抵抗力弱）" },
+      "水": { excess: "肾水偏旺（易腰膝酸软、下焦湿寒）", deficient: "肾气偏弱（易腰背无力、睡眠浅）" }
+    };
+    const excessDesc = elementBalance.strongest.map(el => ORGAN_SHORT[el]?.excess).filter(Boolean).join("、");
+    const deficientDesc = elementBalance.weakest.map(el => ORGAN_SHORT[el]?.deficient).filter(Boolean).join("、");
+    const parts: string[] = [];
+    if (excessDesc) parts.push(`${strongest}偏盛：${excessDesc}`);
+    if (deficientDesc) parts.push(`${weakest}偏弱：${deficientDesc}`);
+    if (parts.length > 0) {
+      health.push(`五行底色：${parts.join("；")}，以下格局特质在此基础上叠加影响。`);
+    }
   }
 
   // 变格专属 health 文案（依《子平真诠》《三命通会》各变格格局体质倾向）
