@@ -1206,3 +1206,24 @@ th {
   opacity: 0.5;
   padding: 0.3rem 0;
 }
+
+/* 败格警示样式 */
+.outcome-warn {
+  background: rgba(220, 80, 60, 0.08);
+  border-left: 3px solid #dc503c;
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.outcome-warn h3 {
+  color: #dc503c;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.outcome-warn p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}

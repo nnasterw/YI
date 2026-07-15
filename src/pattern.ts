@@ -276,20 +276,66 @@ function evaluatePatternOutcome(
 ): { outcome: PatternAssessment["outcome"]; reasons: string[] } {
   const reasons: string[] = [];
 
-  if (patternName.includes("正官格") || patternName.includes("七杀格")) {
+  // 正官格破格（依《子平真诠》"官格最怕伤官"）：
+  // 伤官见正官为最重破格；有印化解则伤官之锐被疏导，官星得保。
+  // 正官格另一常见问题：官杀混杂（正官格中七杀也出现），使官星权威受损，品质降低。
+  if (patternName.includes("正官格")) {
     const hasShangGuan = allStems.some((stem) => computeTenGod(dayStem, stem) === "伤官");
     const hasYin = allStems.some((stem) => {
       const tenGod = computeTenGod(dayStem, stem);
       return tenGod === "正印" || tenGod === "偏印";
     });
+    const hasQiSha = allStems.some((stem) => computeTenGod(dayStem, stem) === "七杀");
     if (hasShangGuan && hasYin) {
       reasons.push("局中伤官透出但有印星化解，官星得以保全，属成格之象。");
       return { outcome: "成格", reasons };
     }
     if (hasShangGuan) {
-      reasons.push("局中伤官透出且无印星化解，恐有伤官见官之嫌，需留意破格风险。");
+      // 依据：《子平真诠》"正官格最忌伤官，伤官见官为祸百端；有印化解则救，无印则破"
+      reasons.push("局中伤官透出且无印星化解，伤官见官之象，破格风险高，需大运补救。");
       return { outcome: "败格", reasons };
     }
+    if (hasQiSha) {
+      // 依据：《子平真诠》"正官格忌官杀混杂，混则官失权威，品格降低；合杀留官或去杀留官方可救解"
+      reasons.push("局中官杀混杂（七杀透出），正官权威受损，格局品质下降，宜大运合杀或制杀以救格。");
+      return { outcome: "败格", reasons };
+    }
+  }
+
+  // 七杀格破格（依《子平真诠》"七杀格，有制者贵，无制者贱"）：
+  // 七杀与正官格核心差异：七杀格需要有制化（食神/印星制杀），无制则格局贱劣；
+  // 而伤官虽克官，对七杀格而言食神制杀本是格局的核心用神，不构成破格。
+  // 七杀格主要破格情形：
+  // 1. 官杀混杂（正官也出现在七杀格中）：杀被官混，反而两难，合官留杀或去官留杀方可救；
+  // 2. 七杀无制（无食神/印星制化）：杀旺无制，凶暴难驭；
+  // 3. 伤官本是七杀格的克星，但七杀格本身重制化，需区分是食神制杀（格局的用法）vs 伤官乱入。
+  if (patternName.includes("七杀格")) {
+    const hasShiShen = allStems.some((stem) => computeTenGod(dayStem, stem) === "食神");
+    const hasYin = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正印" || tenGod === "偏印";
+    });
+    const hasZhengGuan = allStems.some((stem) => computeTenGod(dayStem, stem) === "正官");
+    // 官杀混杂：七杀格中正官透出，官杀相混，格局混浊
+    // 依据：《子平真诠》"七杀格，见正官则官杀混杂，格局大减；合官留杀或去官留杀方为救应"
+    if (hasZhengGuan) {
+      reasons.push("局中官杀混杂（正官透入七杀格），格局混浊，七杀之权被正官分散，需大运合官留杀或制官留杀以救格。");
+      return { outcome: "败格", reasons };
+    }
+    // 七杀有制：食神制杀或印星化杀，均为有力制化
+    // 依据：《子平真诠》"七杀格，有制者贵；食神制杀为上，印星化杀次之"
+    if (hasShiShen) {
+      reasons.push("局中食神透出，食神制杀得法，七杀之威得以疏导，属成格之象（以制为贵）。");
+      return { outcome: "成格", reasons };
+    }
+    if (hasYin) {
+      reasons.push("局中印星透出，化杀生身，七杀之威转为己用，属成格之象（以化为贵）。");
+      return { outcome: "成格", reasons };
+    }
+    // 七杀无制：杀旺无食神/印星制化，格局凶烈
+    // 依据：《子平真诠》"七杀无制，最为下格；身强尚可扛杀，身弱则祸患难免"
+    reasons.push("局中七杀旺而无食神制杀、无印星化杀，七杀无制之象，格局品质偏低，需大运引入制化之神救格。");
+    return { outcome: "败格", reasons };
   }
 
   if (patternName.includes("正财格") || patternName.includes("偏财格")) {

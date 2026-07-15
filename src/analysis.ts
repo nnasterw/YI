@@ -260,9 +260,22 @@ export function buildNarrativeAnalysis(args: {
 
   // 概述只保留综合判断，不重复基本信息卡片中的日主/五行/十神/起运等原始数据。
   const overview: string[] = [];
-  overview.push(
-    `格局定为${pattern.name}（${pattern.category}），以${pattern.governingTenGod}为纲，当前判断倾向${pattern.outcome}。`
-  );
+  {
+    // 变格不使用 governingTenGod（在 pattern.ts 中 governingTenGod 对变格仅做占位）
+    // 改为直接输出格局名称和旺神方向，避免"以比肩为纲"等语义模糊的描述
+    const overviewGovern =
+      pattern.category === "变格"
+        ? {
+            "从强格": "以日主自身气势为纲",
+            "从财格": `以${pattern.governingTenGod}（财星）为纲`,
+            "从杀格": `以${pattern.governingTenGod}（官杀）为纲`,
+            "从儿格": `以${pattern.governingTenGod}（食伤）为纲`,
+          }[pattern.name] ?? `以${pattern.governingTenGod}为纲`
+        : `以${pattern.governingTenGod}为纲`;
+    overview.push(
+      `格局定为${pattern.name}（${pattern.category}），${overviewGovern}，当前判断倾向${pattern.outcome}。`
+    );
+  }
   overview.push(
     `用神取用以${yongShen.primaryMethod}法为主，具体喜忌五行与方位详见下方「喜忌用神」表。`
   );
@@ -322,14 +335,14 @@ export function buildNarrativeAnalysis(args: {
         break;
     }
   } else {
-    // 正格 career 分析
-    if (officerScore >= 3) {
+    // 正格 career 分析（阈值降至 >=2，依据：四柱中只要有2个同类十神即可视为"偏重"）
+    if (officerScore >= 2) {
       career.push("官杀信息偏重，做事倾向看重秩序、责任与结果，适合有规则边界的岗位。");
     }
-    if (resourceScore >= 3) {
+    if (resourceScore >= 2) {
       career.push("印星支持较足，学习吸收、证照积累、方法论沉淀往往能放大事业稳定性。");
     }
-    if (outputScore >= 3) {
+    if (outputScore >= 2) {
       career.push("食伤较活跃，适合表达、策划、产品、创作、咨询等需要输出能力的场景。");
     }
     if (pattern.outcome === "成格") {

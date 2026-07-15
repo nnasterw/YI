@@ -345,6 +345,7 @@ function renderRelations(profile: BaziProfile): string {
 
 function renderNarrativeAnalysis(profile: BaziProfile): string {
   const a = profile.analysis;
+  const pat = profile.pattern;
   const sections = [
     { key: "overview", label: "命局主线" },
     { key: "career", label: "事业" },
@@ -360,11 +361,25 @@ function renderNarrativeAnalysis(profile: BaziProfile): string {
       </div>`;
   }).join("");
 
+  // 败格警示：仅当格局明确判为"败格"时，在核心结论卡片末尾附上破格原因
+  // 依据：《子平真诠》论败格：成格之局顺势可为，败格之局须借大运补救或行事需更谨慎
+  const outcomeHint = pat.outcome === "败格"
+    ? `
+      <div class="analysis-dim outcome-warn">
+        <h3>⚠️ 破格提示</h3>
+        <p>${pat.reasons.filter(r =>
+          r.includes("破格") || r.includes("伤官见官") || r.includes("官杀混杂") ||
+          r.includes("无制") || r.includes("劫财透") || r.includes("财星破印") ||
+          r.includes("枭神") || r.includes("不透")
+        ).slice(-1)[0] ?? pat.reasons.slice(-1)[0] ?? "格局存在破格信号，事业感情需大运补救。"}</p>
+      </div>`
+    : "";
+
   return `
     <div class="card">
       <h2>核心结论</h2>
       <p class="hint">先看主线，再回到各章节查看依据与细节。</p>
-      ${sections}
+      ${sections}${outcomeHint}
     </div>`;
 }
 
