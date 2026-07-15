@@ -4,7 +4,7 @@ import {
   BRANCH_TRIPLE_RELATIONS,
   STEM_META,
   computeTenGod,
-  findBranchPairRelation,
+  findBranchPairRelations,
   getElementInteraction
 } from "./constants";
 import { CONTROLLING } from "./scoring";
@@ -781,86 +781,87 @@ export function buildFlowAnalysis(args: {
   for (const natalBranch of natalBranches) {
     if (seenNatalBranches.has(natalBranch)) continue;
     seenNatalBranches.add(natalBranch);
-    const relation = findBranchPairRelation(flowBranch, natalBranch);
-    if (!relation) {
-      continue;
-    }
+    // 一对地支可能同时命中多种关系（如寅申既六冲又相刑、巳申既六合又相刑，
+    // 这正是“寅巳申”“丑戌未”三刑局的构成方式），需要逐条生成信号，不能只
+    // 取第一条，否则相刑会被六冲/六合/六害无声吞掉。
+    const relationsForPair = findBranchPairRelations(flowBranch, natalBranch);
+    for (const relation of relationsForPair) {
+      if (relation.type === "六合") {
+        registerSignal(
+          {
+            category: "branch-relation",
+            type: relation.type,
+            tone: "supportive",
+            description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
+            members: [flowBranch, natalBranch],
+            result: relation.result
+          },
+          [
+            { dimension: "overall", delta: 1, message: `${levelLabel}地支${flowBranch}合${natalBranch}，事情更容易被牵动、撮合或整合。` },
+            { dimension: "relationships", delta: 2, message: `${levelLabel}${flowBranch}${natalBranch}合，关系互动和协商空间更大。` },
+            { dimension: "wealth", delta: 1, message: `${levelLabel}${flowBranch}${natalBranch}合局，合作、撮合与交易达成更顺畅。` }
+          ]
+        );
+      }
 
-    if (relation.type === "六合") {
-      registerSignal(
-        {
-          category: "branch-relation",
-          type: relation.type,
-          tone: "supportive",
-          description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
-          members: [flowBranch, natalBranch],
-          result: relation.result
-        },
-        [
-          { dimension: "overall", delta: 1, message: `${levelLabel}地支${flowBranch}合${natalBranch}，事情更容易被牵动、撮合或整合。` },
-          { dimension: "relationships", delta: 2, message: `${levelLabel}${flowBranch}${natalBranch}合，关系互动和协商空间更大。` },
-          { dimension: "wealth", delta: 1, message: `${levelLabel}${flowBranch}${natalBranch}合局，合作、撮合与交易达成更顺畅。` }
-        ]
-      );
-    }
+      if (relation.type === "六冲") {
+        registerSignal(
+          {
+            category: "branch-relation",
+            type: relation.type,
+            tone: "challenging",
+            description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
+            members: [flowBranch, natalBranch]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}冲${natalBranch}，阶段更容易出现变动、对冲和突发调整。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}冲${natalBranch}，节律打乱、奔波或身心紧张。` },
+            ...(natalDayBranch === natalBranch
+              ? [
+                  {
+                    dimension: "relationships" as const,
+                    delta: -2,
+                    message: `${levelLabel}${flowBranch}冲到日支${natalBranch}，关系与亲密互动的波动会更明显。`
+                  }
+                ]
+              : [])
+          ]
+        );
+      }
 
-    if (relation.type === "六冲") {
-      registerSignal(
-        {
-          category: "branch-relation",
-          type: relation.type,
-          tone: "challenging",
-          description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
-          members: [flowBranch, natalBranch]
-        },
-        [
-          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}冲${natalBranch}，阶段更容易出现变动、对冲和突发调整。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}冲${natalBranch}，节律打乱、奔波或身心紧张。` },
-          ...(natalDayBranch === natalBranch
-            ? [
-                {
-                  dimension: "relationships" as const,
-                  delta: -2,
-                  message: `${levelLabel}${flowBranch}冲到日支${natalBranch}，关系与亲密互动的波动会更明显。`
-                }
-              ]
-            : [])
-        ]
-      );
-    }
+      if (relation.type === "六害") {
+        registerSignal(
+          {
+            category: "branch-relation",
+            type: relation.type,
+            tone: "challenging",
+            description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
+            members: [flowBranch, natalBranch]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}害${natalBranch}，偏向暗耗和不顺，很多问题会慢慢显形。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，容易产生误解、别扭或暗中消耗。` },
+            { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，注意情绪郁结转成体感问题。` }
+          ]
+        );
+      }
 
-    if (relation.type === "六害") {
-      registerSignal(
-        {
-          category: "branch-relation",
-          type: relation.type,
-          tone: "challenging",
-          description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
-          members: [flowBranch, natalBranch]
-        },
-        [
-          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}害${natalBranch}，偏向暗耗和不顺，很多问题会慢慢显形。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，容易产生误解、别扭或暗中消耗。` },
-          { dimension: "health", delta: -1, message: `${levelLabel}${flowBranch}害${natalBranch}，注意情绪郁结转成体感问题。` }
-        ]
-      );
-    }
-
-    if (relation.type === "相刑" || relation.type === "自刑") {
-      registerSignal(
-        {
-          category: "branch-relation",
-          type: relation.type,
-          tone: "challenging",
-          description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
-          members: [flowBranch, natalBranch]
-        },
-        [
-          { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}刑${natalBranch}，阶段更容易出现拧巴、反复或内耗。` },
-          { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}刑${natalBranch}，需留意边界、情绪和语言方式。` },
-          { dimension: "health", delta: -2, message: `${levelLabel}${flowBranch}刑${natalBranch}，重点留意压力累积和身体警讯。` }
-        ]
-      );
+      if (relation.type === "相刑" || relation.type === "自刑") {
+        registerSignal(
+          {
+            category: "branch-relation",
+            type: relation.type,
+            tone: "challenging",
+            description: `${levelLabel}地支${flowBranch}与原局${natalBranch}形成${relation.type}。`,
+            members: [flowBranch, natalBranch]
+          },
+          [
+            { dimension: "overall", delta: -1, message: `${levelLabel}地支${flowBranch}刑${natalBranch}，阶段更容易出现拧巴、反复或内耗。` },
+            { dimension: "relationships", delta: -1, message: `${levelLabel}${flowBranch}刑${natalBranch}，需留意边界、情绪和语言方式。` },
+            { dimension: "health", delta: -2, message: `${levelLabel}${flowBranch}刑${natalBranch}，重点留意压力累积和身体警讯。` }
+          ]
+        );
+      }
     }
   }
 
@@ -903,8 +904,10 @@ export function buildFlowAnalysis(args: {
 
   if (parentGanZhi) {
     const [, parentBranch] = [...parentGanZhi];
-    const relation = findBranchPairRelation(flowBranch, parentBranch);
-    if (relation) {
+    // 与原局关系判断同理：流年支与大运支之间也可能同时命中多种关系
+    // （如寅申既六冲又相刑），需逐条生成信号，不能只取第一条。
+    const parentRelations = findBranchPairRelations(flowBranch, parentBranch);
+    for (const relation of parentRelations) {
       const supportive = ["六合", "三合", "三会"].includes(relation.type);
       registerSignal(
         {

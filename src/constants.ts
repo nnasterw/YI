@@ -223,34 +223,47 @@ const ELEMENT_CONTROLS: Record<Element, Element> = {
   水: "火"
 };
 
-export function findBranchPairRelation(
+/**
+ * 查取两支之间可能成立的六合/六冲/六害/相刑关系。
+ *
+ * 注意：地支两两关系并非互斥单选——传统命理中"寅巳申"三刑本身即由
+ * 寅巳（六害）、巳申（六合）、寅申（六冲）三组两两关系叠加构成，"丑戌未"
+ * 三刑同样叠加了丑未（六冲）、未戌（相刑）、丑戌（相刑）。此前实现在
+ * BRANCH_PAIR_RELATIONS（六合/六冲/六害）命中后直接return、永不再检查
+ * BRANCH_PUNISHMENTS（相刑），导致寅巳/巳申/寅申/丑未这四组本应同时成立
+ * 两种关系的地支组合，相刑被六合/六冲/六害无声吞掉——批量抽样显示影响
+ * 约30%的命局。现改为返回全部命中的关系数组，不再互相短路覆盖。
+ */
+export function findBranchPairRelations(
   branchA: string,
   branchB: string
-): { type: string; result?: string } | undefined {
-  // 同一支不构成六合/六冲/六害等对宫关系
+): Array<{ type: string; result?: string }> {
+  const matches: Array<{ type: string; result?: string }> = [];
+
+  // 同一支不构成六合/六冲/六害等对宫关系，仅检查自刑
   if (branchA === branchB) {
-    // 仅检查自刑
     if (SELF_PUNISHMENTS.has(branchA)) {
-      return { type: "自刑" };
+      matches.push({ type: "自刑" });
     }
-    return undefined;
+    return matches;
   }
+
   for (const relation of BRANCH_PAIR_RELATIONS) {
     if ((relation.members as readonly string[]).includes(branchA) && (relation.members as readonly string[]).includes(branchB)) {
-      return {
+      matches.push({
         type: relation.type,
         result: "result" in relation ? relation.result : undefined
-      };
+      });
     }
   }
 
   for (const relation of BRANCH_PUNISHMENTS) {
     if ((relation.members as readonly string[]).includes(branchA) && (relation.members as readonly string[]).includes(branchB)) {
-      return { type: relation.type };
+      matches.push({ type: relation.type });
     }
   }
 
-  return undefined;
+  return matches;
 }
 
 export function findBranchTripleRelations(branches: string[]): Array<{

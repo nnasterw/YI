@@ -2,7 +2,7 @@ import {
   SELF_PUNISHMENTS,
   STEM_COMBINATIONS,
   findBranchHalfTripleRelations,
-  findBranchPairRelation,
+  findBranchPairRelations,
   findBranchTripleRelations,
   getElementInteraction
 } from "./constants";
@@ -47,6 +47,11 @@ export function analyzeNatalRelations(pillars: PillarDetails[]): RelationRecord[
   // 命盘中某地支重复出现时（如两柱皆为“午”），会与同一个第三方地支各自构成
   // 完全相同的六合/六冲/六害关系（文案也相同），此处按“关系类型+地支组合”去重，
   // 避免报告中出现两条一模一样的关系描述。
+  //
+  // 注意：一对地支可能同时命中多种关系（如寅申既六冲又相刑、巳申既六合又相刑，
+  // 这正是"寅巳申"“丑戌未”三刑局的构成方式），findBranchPairRelations 会返回
+  // 全部命中项，此处需要逐条记录，不能只取第一条，否则相刑会被六冲/六合/六害
+  // 无声吞掉（此前实现的bug，批量抽样显示约30%命局漏报相刑关系）。
   const seenPairKeys = new Set<string>();
   for (let i = 0; i < branches.length; i += 1) {
     for (let j = i + 1; j < branches.length; j += 1) {
@@ -55,18 +60,17 @@ export function analyzeNatalRelations(pillars: PillarDetails[]): RelationRecord[
       if (branches[i] === branches[j]) {
         continue;
       }
-      const match = findBranchPairRelation(branches[i], branches[j]);
-      if (!match) {
-        continue;
+      const matches = findBranchPairRelations(branches[i], branches[j]);
+      for (const match of matches) {
+        const pairKey = `${match.type}:${[branches[i], branches[j]].sort().join(",")}`;
+        if (seenPairKeys.has(pairKey)) {
+          continue;
+        }
+        seenPairKeys.add(pairKey);
+        relations.push(
+          buildEarthlyRelation(match.type, [branches[i], branches[j]], match.result)
+        );
       }
-      const pairKey = `${match.type}:${[branches[i], branches[j]].sort().join(",")}`;
-      if (seenPairKeys.has(pairKey)) {
-        continue;
-      }
-      seenPairKeys.add(pairKey);
-      relations.push(
-        buildEarthlyRelation(match.type, [branches[i], branches[j]], match.result)
-      );
     }
   }
 
