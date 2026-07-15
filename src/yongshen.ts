@@ -237,7 +237,14 @@ export function assessYongShen(
         overrideReason,
         `（若按正格常法（${original.method}）推导则为"${originalReasonTrimmed}"，但${pattern.name}顺势为准，不采此说。）`
       );
-      methods.unshift(primary);
+      // 变格顺势一旦成立，正格四法（病药/调候/通关/扶抑）的推导已被明确否定不采用，
+      // methods 数组不应再保留它们——此前实现仅将 primary 顺势置于数组最前，
+      // 被否定的旧方法结果仍残留在数组后段，任何直接遍历/展示 methods 全量的消费方，
+      // 例如若未来网页端渲染候选方法列表，就会重新出现"顺势"与紧随其后的
+      // "病药法：宜取印星化杀"同屏并存的矛盾。故此处清空后只保留顺势这一条，
+      // 与 primaryMethod、reasons 三处口径彻底统一。
+      methods.length = 0;
+      methods.push(primary);
     }
   }
 
