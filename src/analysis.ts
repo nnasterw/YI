@@ -264,8 +264,15 @@ export function buildNarrativeAnalysis(args: {
   overview.push(
     `用神取用以${yongShen.primaryMethod}法为主，具体喜忌五行与方位详见下方「喜忌用神」表。`
   );
+  // 中和态需按 strength.isStrong（supportRatio>=0.5 的二次区分，见 scoring.ts）
+  // 区分偏强/偏弱措辞，不能无脑说"大致平衡"——否则会与同一份报告里用神取用
+  // （如病药法"比劫重重为病，宜克制"）明确给出的偏强/偏弱结论自相矛盾。
   if (strength.level === "中和") {
-    overview.push("日主中和，扶抑之力大致平衡，需结合格局与用神再定取舍。");
+    overview.push(
+      strength.isStrong
+        ? `日主中和偏强（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以克泄耗为宜，需结合格局与用神再定取舍。`
+        : `日主中和偏弱（扶抵占比${Math.round(strength.supportRatio * 100)}%），仍以生扶为宜，需结合格局与用神再定取舍。`
+    );
   }
 
   const career: string[] = [];
@@ -357,9 +364,13 @@ export function buildNarrativeAnalysis(args: {
   const weakest = elementBalance.weakest.join("、");
   health.push(`健康观察上，先看${strongest}偏盛与${weakest}偏弱对应的寒热燥湿失衡。`);
 
-  if (strength.level === "身极弱" || strength.level === "身弱") {
+  // 改用 strength.isStrong 而非仅比较 level：原判断把"中和"排除在偏强/偏弱两个
+  // 分支之外，导致约36%的中和态样本（含中和偏强、中和偏弱）在健康维度完全没有
+  // 强弱相关建议，是明显的信息缺口；isStrong 已对中和态做了偏强/偏弱二次区分
+  // （见 scoring.ts），据此补全健康维度可覆盖全部命局且与其他维度口径一致。
+  if (!strength.isStrong) {
     health.push("日主偏弱，整体抗压耐受度相对有限，作息规律和体力储备上更需要留有余量。");
-  } else if (strength.level === "身旺" || strength.level === "身强") {
+  } else {
     health.push("日主偏旺，精力充沛的同时也容易情绪或气血过亢，宜适度疏泄、避免长期硬扛。");
   }
   const yangRen = shenSha.find((record) => record.name === "羊刃");

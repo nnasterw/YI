@@ -53,14 +53,11 @@ function computeElementScores(profile: BaziProfile): ElementScores {
 
   const strongValue = totals[dayElement] + totals[generating];
   const weakValue = Object.values(totals).reduce((a, b) => a + b, 0) - strongValue;
-  // 旺衰结论统一采用核心引擎的三维旺衰标准（profile.strength，与大运流年分析同源，
-  // 即 得令/得地/得势 细判 + supportRatio 中和态兵底），不再用本地单一阈值
-  // strongValue > 29 重新判定，避免网页展示结论与后端真实计算结论不一致。
-  const isStrong = profile.strength.level === "身旺" || profile.strength.level === "身强"
-    ? true
-    : profile.strength.level === "身弱" || profile.strength.level === "身极弱"
-      ? false
-      : profile.strength.supportRatio >= 0.5;
+  // 旺衰结论直接复用核心引擎 profile.strength.isStrong（三维细判 得令/得地/得势 +
+  // supportRatio 中和态兜底，见 scoring.ts），不再在渲染层重复实现一遍等价公式。
+  // 此前这里本地重推一次同款判断，虽结果与引擎一致，但两处口径分散维护，一旦
+  // 未来 scoring.ts 调整 supportRatio 阈值，这里会静默失步，是潜在的不一致隐患。
+  const isStrong = profile.strength.isStrong;
 
   return { totals, stemScores, branchScores, strongValue, weakValue, isStrong };
 }

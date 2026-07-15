@@ -334,3 +334,108 @@ describe("relation description uses Chinese pillar labels", () => {
     }
   });
 });
+
+describe("中和态旺衰口径一致性（回归 isStrong 与 level 分歧 bug）", () => {
+  // 2006-10-11 18:00 男：扶抑法中和态样本，此前 selectByFuYi 的"中和"分支无脑
+  // 取比劫为用神，未按 isStrong 区分偏强/偏弱，导致喜用神与 isStrong 定性矛盾。
+  it("扶抑法中和偏强命局不应把比劫/印星作为最喜用神", () => {
+    const profile = generateBaziProfile({
+      calendarType: "solar",
+      year: 2006,
+      month: 10,
+      day: 11,
+      hour: 18,
+      minute: 0,
+      gender: "male"
+    });
+
+    if (profile.yongShen.primaryMethod === "扶抑" && profile.strength.level === "中和") {
+      const dayElement = profile.chart.dayMaster.element;
+      const printElement = (Object.entries({
+        木: "火", 火: "土", 土: "金", 金: "水", 水: "木"
+      }).find(([, v]) => v === dayElement) ?? [])[0];
+      if (profile.strength.isStrong) {
+        expect(profile.yongShen.yongShen).not.toContain(dayElement);
+        expect(profile.yongShen.yongShen).not.toContain(printElement);
+      }
+    }
+  });
+
+  // 1990-05-15 10:00 男：庚日主中和偏强（supportRatio 62%），比劫（金）重重成病，
+  // 覆盖 selectByBingYao 的 isStrong 判断、概述文案、健康维度三处口径。
+  it("中和偏强命局的病药法、概述文案、健康建议三处口径应彼此一致", () => {
+    const profile = generateBaziProfile({
+      calendarType: "solar",
+      year: 1990,
+      month: 5,
+      day: 15,
+      hour: 10,
+      minute: 0,
+      gender: "male"
+    });
+
+    expect(profile.strength.level).toBe("中和");
+    expect(profile.strength.isStrong).toBe(true);
+    expect(profile.yongShen.primaryMethod).toBe("病药");
+    // 病药法取克泄耗（官杀/食伤），不应取比劫同气为药
+    expect(profile.yongShen.yongShen).not.toContain(profile.chart.dayMaster.element);
+
+    // 概述文案需标注"偏强"，不能只说"大致平衡"（否则与用神取用矛盾）
+    const overviewLine = profile.analysis.overview.find((line) => line.includes("中和"));
+    expect(overviewLine).toContain("偏强");
+    expect(overviewLine).not.toContain("偏弱");
+
+    // 健康维度不应因"中和"而完全缺失强弱建议
+    expect(profile.analysis.health.some((line) => line.includes("日主偏旺"))).toBe(true);
+  });
+
+  // 批量抽样保证：扶抑法、病药法（比劫/食伤为病）在任意中和态样本下均不与
+  // strength.isStrong 矛盾，避免同类"level 二元判断遗漏中和细分"的 bug 再次出现。
+  it("批量样本中扶抑法与病药法结论均与 strength.isStrong 一致", () => {
+    const REVERSE_GENERATING: Record<string, string> = { 木: "火", 火: "土", 土: "金", 金: "水", 水: "木" };
+    const REVERSE_CONTROLLING: Record<string, string> = { 木: "金", 火: "水", 土: "木", 金: "火", 水: "土" };
+    const GENERATING: Record<string, string> = { 木: "火", 火: "土", 土: "金", 金: "水", 水: "木" };
+    const printOf = (el: string) => Object.keys(GENERATING).find((k) => GENERATING[k] === el)!;
+
+    let fuyiChecked = 0;
+    let bingyaoChecked = 0;
+
+    for (let year = 1960; year <= 2024; year += 3) {
+      for (const [month, day, hour] of [[3, 12, 6], [7, 20, 14], [11, 5, 22]] as const) {
+        const profile = generateBaziProfile({
+          calendarType: "solar",
+          year,
+          month,
+          day,
+          hour,
+          minute: 0,
+          gender: year % 2 === 0 ? "male" : "female"
+        });
+
+        const dayElement = profile.chart.dayMaster.element;
+        const { yongShen, primaryMethod, methods } = profile.yongShen;
+        const { isStrong } = profile.strength;
+
+        if (primaryMethod === "扶抑") {
+          fuyiChecked++;
+          if (isStrong) {
+            expect(yongShen).not.toContain(dayElement);
+            expect(yongShen).not.toContain(printOf(dayElement));
+          } else {
+            expect(yongShen).not.toContain(REVERSE_CONTROLLING[dayElement]);
+            expect(yongShen).not.toContain(REVERSE_GENERATING[dayElement]);
+          }
+        }
+
+        const bingyao = methods.find((m) => m.method === "病药");
+        if (bingyao && (bingyao.reason.includes("比劫重重") || bingyao.reason.includes("食伤过旺"))) {
+          bingyaoChecked++;
+          expect(isStrong).toBe(true);
+        }
+      }
+    }
+
+    expect(fuyiChecked).toBeGreaterThan(0);
+    expect(bingyaoChecked).toBeGreaterThan(0);
+  });
+});

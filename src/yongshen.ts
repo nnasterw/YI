@@ -29,10 +29,27 @@ function selectByFuYi(dayElement: Element, strength: StrengthAssessment): YongSh
       reason: `日主${strength.level}，宜以生扶之${supporting}、同气之${dayElement}为用，扶其不足。`
     };
   }
+  // level==="中和"时，三诀细判扶抵大致相当，但 supportRatio 仍会略偏一侧——
+  // strength.isStrong 已经用 supportRatio>=0.5 对中和态做了偏强/偏弱的二次区分
+  // （见 scoring.ts）。此前这里无论中和偏强偏弱，一律取"同气五行"（比劫）为参考
+  // 用神，若中和实际偏强（isStrong=true），会与"身强当忌比劫、喜克泄耗"的扶抑
+  // 大原则自相矛盾——用户能同时看到 isStrong=身强定性、却被推荐比劫为最喜用神。
+  // 中和偏强复用身强分支的克泄耗结论，偏弱复用身弱分支的生扶结论，仅措辞标注为
+  // "中和偏强/中和偏弱"以区别于真正的身旺/身强/身弱/身极弱。
+  if (strength.isStrong) {
+    const controlling = reverseControlling(dayElement);
+    const draining = reverseGenerating(dayElement);
+    return {
+      method: "扶抑",
+      elements: [controlling, draining],
+      reason: `日主中和偏强（扶抵占比${Math.round(strength.supportRatio * 100)}%），宜以克耗之${controlling}、泄秀之${draining}为用，抑其偏盛。`
+    };
+  }
+  const supporting = GENERATING[dayElement];
   return {
     method: "扶抑",
-    elements: [dayElement],
-    reason: "日主中和，扶抑之力大致平衡，暂以同气五行为参考用神。"
+    elements: [supporting, dayElement],
+    reason: `日主中和偏弱（扶抵占比${Math.round(strength.supportRatio * 100)}%），宜以生扶之${supporting}、同气之${dayElement}为用，扶其偏虚。`
   };
 }
 
@@ -55,7 +72,11 @@ function selectByBingYao(
 ): YongShenMethodResult | null {
   const dayStem = pillars.find((pillar) => pillar.key === "day")!.stem.value;
   const allStems = pillars.map((pillar) => pillar.stem.value);
-  const isStrong = strength.level === "身旺" || strength.level === "身强";
+  // 用 strength.isStrong（已含中和态按 supportRatio 的偏强/偏弱二次区分，见
+  // scoring.ts）而非仅比较 level 是否为"身旺/身强"：否则中和偏强命局即使比劫、
+  // 食伤同样过重成病，也会被这里判定为不满足病药条件，与 selectByFuYi 扶抑法
+  // 对中和偏强命局"当忌比劫、当克食伤"的结论互相矛盾。
+  const isStrong = strength.isStrong;
 
   const officerCount = allStems.filter((stem) => {
     const tenGod = computeTenGod(dayStem, stem);
