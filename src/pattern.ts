@@ -311,6 +311,68 @@ function evaluatePatternOutcome(
     }
   }
 
+  // 食神格破格条件（依《子平真诠》）：
+  // 1. 枭神夺食（偏印透出抑制食神）为最重之病，无财星解救则破格；
+  // 2. 官杀透出为次患，食神以制杀为功，但官杀过重则制不住，反为财官双病。
+  if (patternName === "食神格") {
+    const hasPianYin = allStems.some((stem) => computeTenGod(dayStem, stem) === "偏印");
+    const hasCai = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正财" || tenGod === "偏财";
+    });
+    if (hasPianYin && !hasCai) {
+      // 枭神夺食且无财星救应：偏印压制食神，又无财星制住偏印
+      // 依据：《子平真诠》"食神喜生财，怕枭印夺食；枭印劫财，皆食神之忌"
+      reasons.push("局中偏印（枭神）透出且无财星制枭，食神受压，枭神夺食之象，需留意破格风险。");
+      return { outcome: "败格", reasons };
+    }
+    if (hasPianYin && hasCai) {
+      // 枭神夺食但有财星制枭：财克偏印，化解枭神之患，食神得保
+      // 依据：《子平真诠》"食神逢枭，得财制枭，食神复活，此为救应"
+      reasons.push("局中偏印透出但有财星制枭，食神得以保全，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+    const hasOfficerOrKill = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正官" || tenGod === "七杀";
+    });
+    if (hasOfficerOrKill) {
+      // 食神格中透出官杀：食神以制杀为功，七杀可制为用，但正官入食神格常属赘物
+      // 依据：《子平真诠》"食神格，透杀则以食制杀为贵；若正官入局，食神见官则混杂"
+      reasons.push("局中官杀透出，食神格中七杀可借食神制化，需结合旺衰判断是否制化有力。");
+      // 不直接判败格，留待后续结合大运验证
+    }
+  }
+
+  // 伤官格破格条件（依《子平真诠》）：
+  // 伤官格最畏见正官（"伤官见官，祸患百端"），有印星化解则可救；
+  // 伤官佩印、伤官配财各有格局，但若正官透而无印，则为败格。
+  // 注意：patternName 已被细化为"伤官格（有制）"/"伤官格（伤尽）"，需用 includes 匹配
+  if (patternName.includes("伤官格")) {
+    const hasZhengGuan = allStems.some((stem) => computeTenGod(dayStem, stem) === "正官");
+    const hasYin = allStems.some((stem) => {
+      const tenGod = computeTenGod(dayStem, stem);
+      return tenGod === "正印" || tenGod === "偏印";
+    });
+    if (hasZhengGuan && !hasYin) {
+      // 伤官见正官且无印化解：伤官最忌正官，此为伤官见官最纯粹的破格形态
+      // 依据：《子平真诠》"伤官见官，为祸百端；有印化解，尚可解救"
+      reasons.push("局中正官透出且无印星化解，伤官见官之象，破格风险高，需大运补救。");
+      return { outcome: "败格", reasons };
+    }
+    if (hasZhengGuan && hasYin) {
+      // 伤官见官但有印化解：印绶化伤官之锐，使正官得保
+      reasons.push("局中正官透出但有印星化解，伤官之锐得以疏导，官星得保，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+    if (patternName === "伤官格（伤尽）") {
+      // 伤尽无官：格局清纯，最宜走财运，财引食伤为用，前途通畅
+      // 依据：《子平真诠》"伤官伤尽，最喜财星；无官可伤，以财为纲"
+      reasons.push("伤官伤尽格，局中无官可伤，格局清纯，最宜财星相引，属成格之象。");
+      return { outcome: "成格", reasons };
+    }
+  }
+
   if (patternName === "羊刃格") {
     const hasOfficer = allStems.some((stem) => {
       const tenGod = computeTenGod(dayStem, stem);

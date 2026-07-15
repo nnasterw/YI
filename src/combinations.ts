@@ -49,6 +49,14 @@ function countTenGodCategory(profile: BaziProfile, gods: string[]): number {
   return gods.reduce((sum, g) => sum + (dist[g] ?? 0), 0);
 }
 
+/**
+ * 判断非日干的天干中是否含有指定十神。
+ *
+ * 设计决策——"透出才为显"原则：
+ * 十神组合（官印相生、食神制杀等）以天干透出为必要条件，藏干中的十神属于"藏而不透"，
+ * 依《子平真诠》"透出天干，清纯有力；深藏地支，隐而不显"之说，藏干十神不单独计入组合判断。
+ * 这是刻意的设计决策，并非逻辑遗漏。若需判断藏干参与情况，应另行调用 hiddenStems 相关字段。
+ */
 function hasStemTenGod(profile: BaziProfile, gods: string[]): boolean {
   return profile.chart.pillars.some(p => p.key !== "day" && gods.includes(p.stem.tenGod));
 }
