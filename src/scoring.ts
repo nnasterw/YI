@@ -140,9 +140,22 @@ export function assessStrength(pillars: PillarDetails[], dayElement: Element): S
       `得势：${deShi ? "是" : "否"}（天干比劫/印星帮扶${helpingStemCount}位）。`
   );
 
+  // isStrong 必须与上方三维细判的 level 同源推导，不可再用 computeStrength 的单一总分
+  // 阈值（strongValue>29）重新判定一遍——二者标准不同，实测约4%概率互相矛盾
+  // （例如1950-07-15 18:00男命：level="身强"但旧阈值判定strongValue不足29而给出
+  // isStrong=false），会导致同一个 StrengthAssessment 对象内部 level 与 isStrong
+  // 两个字段自相矛盾。身旺/身强→true，身弱/身极弱→false，中和态以supportRatio
+  // 是否过半兜底，与大运流年评分（isStrongForFlow）、网页渲染层保持完全一致的唯一口径。
+  const isStrong =
+    level === "身旺" || level === "身强"
+      ? true
+      : level === "身弱" || level === "身极弱"
+        ? false
+        : supportRatio >= 0.5;
+
   return {
     level,
-    isStrong: scores.isStrong,
+    isStrong,
     deLing,
     deDi,
     rootWeight,
