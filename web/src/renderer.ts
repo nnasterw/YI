@@ -542,17 +542,22 @@ function renderLuckCycleDetails(profile: BaziProfile, dayElement: Element, isStr
   const monthBranch = profile.chart.pillars[1].branch.value;
   const sections = profile.luckCycles.cycles.map(cycle => {
     const annualItems = cycle.annuals.map(a => renderAnnualDetail(a, dayElement, isStrong, monthBranch)).join("");
+    // 「大运总览」表格的"整体"列、「人生节奏」「关键年份」三处都已用 corrected
+    // （40%透出+25%十神+20%冲合刑害+10%调候）口径；这里若继续用引擎原始
+    // overall.tone，用户从总览点开同一步大运详情会看到相反结论（实测约26%的
+    // 大运会出现这种矛盾）。统一为 corrected，与总览表格保持一致。
+    const overallTone = computeCorrectedTone(cycle.ganZhi, dayElement, isStrong, monthBranch, cycle.analysis).tone;
 
     return `
       <details class="cycle-detail">
         <summary>
           第${cycle.index}运 <span class="ganzhi">${cycle.ganZhi}</span>
           （${cycle.startAge}-${cycle.endAge}岁，${cycle.startYear}-${cycle.endYear}）
-          ${toneLabel(cycle.analysis.overall.tone)}
+          ${toneLabel(overallTone)}
         </summary>
         <div class="cycle-analysis">
           <div class="cycle-dims">
-            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(cycle.analysis.overall.tone)}：${pickReportLines(cycle.analysis.overall.summary, 2).join(" ") || "无明显触发信号"}</div>
+            <div class="cycle-dim"><span class="dim-icon">🔮</span><strong>整体</strong> ${toneLabel(overallTone)}：${pickReportLines(cycle.analysis.overall.summary, 2).join(" ") || "无明显触发信号"}</div>
             <div class="cycle-dim"><span class="dim-icon">💼</span><strong>事业</strong> ${toneLabel(cycle.analysis.career.tone)}：${summarizeDimension(cycle.analysis.career.summary)}</div>
             <div class="cycle-dim"><span class="dim-icon">❤️</span><strong>感情</strong> ${toneLabel(cycle.analysis.relationships.tone)}：${summarizeDimension(cycle.analysis.relationships.summary)}</div>
             <div class="cycle-dim"><span class="dim-icon">🏥</span><strong>健康</strong> ${toneLabel(cycle.analysis.health.tone)}：${summarizeDimension(cycle.analysis.health.summary)}</div>
