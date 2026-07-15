@@ -5,18 +5,71 @@ import "./style.css";
 
 let currentProfile: BaziProfile | null = null;
 
+// ---- 表单持久化：将填写内容存到 localStorage，页面刷新/重连后自动恢复 ----
+const STORAGE_KEY = "bazi-form-state";
+const FORM_FIELDS = ["calendar", "year", "month", "day", "hour", "minute", "gender", "sect"] as const;
+
+function saveFormState(): void {
+  const state: Record<string, string> = {};
+  for (const id of FORM_FIELDS) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (el) state[id] = el.value;
+  }
+  const leapEl = document.getElementById("leap-month") as HTMLInputElement | null;
+  if (leapEl) state["leap-month"] = String(leapEl.checked);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+function restoreFormState(): void {
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch {}
+  if (!raw) return;
+  try {
+    const state: Record<string, string> = JSON.parse(raw);
+    for (const id of FORM_FIELDS) {
+      const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+      if (el && state[id] !== undefined) el.value = state[id];
+    }
+    const leapEl = document.getElementById("leap-month") as HTMLInputElement | null;
+    if (leapEl && state["leap-month"] !== undefined) leapEl.checked = state["leap-month"] === "true";
+    // 同步农历选项显示状态
+    const calendarEl = document.getElementById("calendar") as HTMLSelectElement | null;
+    const lunarOptsEl = document.getElementById("lunar-options") as HTMLElement | null;
+    if (calendarEl && lunarOptsEl) {
+      lunarOptsEl.style.display = calendarEl.value === "lunar" ? "flex" : "none";
+    }
+  } catch {}
+}
+// ---- 持久化工具函数结束 ----
+
 const form = document.getElementById("bazi-form") as HTMLFormElement;
 const outputSection = document.getElementById("output-section") as HTMLElement;
 const reportDiv = document.getElementById("report") as HTMLElement;
 const calendarSelect = document.getElementById("calendar") as HTMLSelectElement;
 const lunarOptions = document.getElementById("lunar-options") as HTMLElement;
 
+// 页面加载时立即恢复上次填写的表单内容
+restoreFormState();
+
 calendarSelect.addEventListener("change", () => {
   lunarOptions.style.display = calendarSelect.value === "lunar" ? "flex" : "none";
+  saveFormState();
 });
+
+// 所有表单字段的 change/input 事件均触发保存，确保实时持久化
+for (const id of FORM_FIELDS) {
+  const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+  if (el) {
+    el.addEventListener("input", saveFormState);
+    el.addEventListener("change", saveFormState);
+  }
+}
+const leapMonthEl = document.getElementById("leap-month") as HTMLInputElement | null;
+if (leapMonthEl) leapMonthEl.addEventListener("change", saveFormState);
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
+  saveFormState();
 
   const yearVal = (document.getElementById("year") as HTMLInputElement).value;
   const monthVal = (document.getElementById("month") as HTMLInputElement).value;
