@@ -960,8 +960,14 @@ export function buildNarrativeAnalysis(args: {
     // 分支之外，导致约36%的中和态样本（含中和偏强、中和偏弱）在健康维度完全没有
     // 强弱相关建议，是明显的信息缺口；isStrong 已对中和态做了偏强/偏弱二次区分
     // （见 scoring.ts），据此补全健康维度可覆盖全部命局且与其他维度口径一致。
+    // 若命局有羊刃神煞，羊刃专属文案已覆盖"情绪波动"主题，偏旺条聚焦气血/体力，避免重叠
+    // 依据：《三命通会》"羊刃主刚烈冲动，情绪激烈为羊刃本色"
+    const hasYangRenShenSha = shenSha.some((record) => record.name === "羊刃");
     if (!strength.isStrong) {
       health.push("日主偏弱，整体抗压耐受度相对有限，作息规律和体力储备上更需要留有余量。");
+    } else if (hasYangRenShenSha) {
+      // 羊刃专属文案负责情绪主题，此处聚焦气血旺盛的体力面
+      health.push("日主偏旺，气血充沛、精力相对充足；需注意过度透支体力或饮食节制，保留适当恢复空间。");
     } else {
       health.push("日主偏旺，精力充沛的同时也容易情绪或气血过亢，宜适度疏泄、避免长期硬扛。");
     }
@@ -969,9 +975,14 @@ export function buildNarrativeAnalysis(args: {
     // 五行脏腑对应建议（依《黄帝内经》五脏五行对应）：
     // 木→肝胆、火→心小肠、土→脾胃、金→肺大肠、水→肾膀胱
     // 偏盛则过亢，偏弱则不足，取最偏（strongest/weakest）各给一条健康提示
+    // 若有羊刃神煞，"火"偏盛不再提"情绪波动大"（羊刃专属文案已覆盖情绪主题）
+    // 依据：《三命通会》"羊刃主情绪激烈冲动，为羊刃本色"；与"心火偏旺情绪"重复
+    const fireExcessDesc = hasYangRenShenSha
+      ? "心火偏旺，容易心悸、睡眠浅或血压偏高"
+      : "心火偏旺，容易心悸、睡眠浅或情绪波动大";
     const ORGAN_MAP: Record<string, { excess: string; deficient: string }> = {
       "木": { excess: "肝气偏亢，容易情绪急躁、眼睛疲劳或筋肌紧张", deficient: "肝血偏弱，容易眼睛干涩、筋骨不够柔韧或情绪郁结不舒" },
-      "火": { excess: "心火偏旺，容易心悸、睡眠浅或情绪波动大", deficient: "心阳偏弱，容易疲倦乏力、手脚怕冷或心气提不起来" },
+      "火": { excess: fireExcessDesc, deficient: "心阳偏弱，容易疲倦乏力、手脚怕冷或心气提不起来" },
       "土": { excess: "脾胃湿热偏重，容易消化积滞、四肢沉重或体湿困顿", deficient: "脾胃偏弱，消化吸收和气血生化能力有限，容易食欲不振、体力不续" },
       "金": { excess: "肺气过旺，容易皮肤干燥、鼻咽敏感或呼吸道问题", deficient: "肺气偏弱，抵抗力相对有限，呼吸道和皮肤的外邪防御需要加强" },
       "水": { excess: "肾水偏旺，容易腰膝酸软、下焦湿寒或精神内敛过度", deficient: "肾气偏弱，容易腰背无力、精力续航短或睡眠质量不稳" }
